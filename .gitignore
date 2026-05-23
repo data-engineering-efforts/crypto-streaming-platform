@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.env
+venv/
+.venv/
+
+# Flink
+*.jar
+flink-checkpoints/
+
+# Docker
+.docker/
+
+# IDE
+.vscode/
+.idea/
+
+# Secrets
+*.key
+*.pem
+config/secrets.yml
