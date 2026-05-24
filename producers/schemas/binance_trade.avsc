@@ -1,0 +1,78 @@
+{
+  "namespace": "com.crypto.streaming.binance",
+  "type": "record",
+  "name": "BinanceTrade",
+  "doc": "Raw trade event from Binance WebSocket stream",
+  "fields": [
+    {
+      "name": "event_type",
+      "type": "string",
+      "doc": "Event type from Binance WS, always 'trade'"
+    },
+    {
+      "name": "event_time",
+      "type": "long",
+      "logicalType": "timestamp-millis",
+      "doc": "Event timestamp in milliseconds (Unix epoch)"
+    },
+    {
+      "name": "symbol",
+      "type": "string",
+      "doc": "Trading pair symbol e.g. BTCUSDT, ETHUSDT"
+    },
+    {
+      "name": "trade_id",
+      "type": "long",
+      "doc": "Unique trade ID from Binance"
+    },
+    {
+      "name": "price",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 18,
+        "scale": 8
+      },
+      "doc": "Trade execution price"
+    },
+    {
+      "name": "quantity",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 18,
+        "scale": 8
+      },
+      "doc": "Trade quantity in base asset (BTC, ETH)"
+    },
+    {
+      "name": "buyer_order_id",
+      "type": ["long", "null"],
+      "default": 0,
+      "doc": "Buyer order ID (deprecated by Binance, may be absent)"
+    },
+    {
+      "name": "seller_order_id",
+      "type": ["long", "null"],
+      "default": 0,
+      "doc": "Seller order ID (deprecated by Binance, may be absent)"
+    },
+    {
+      "name": "trade_time",
+      "type": "long",
+      "logicalType": "timestamp-millis",
+      "doc": "Trade execution timestamp in milliseconds"
+    },
+    {
+      "name": "is_buyer_maker",
+      "type": "boolean",
+      "doc": "true if buyer is market maker (sell order filled)"
+    },
+    {
+      "name": "ingestion_time",
+      "type": "long",
+      "logicalType": "timestamp-millis",
+      "doc": "Timestamp when Producer received the event"
+    }
+  ]
+}

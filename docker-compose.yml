@@ -1,55 +1,98 @@
 services:
 
-  # ─── Kafka (KRaft mode, no ZooKeeper) ───────────────────────
-  kafka:
+  # ─── Kafka Broker 1 ──────────────────────────────────────────
+  kafka-1:
+      image: apache/kafka:3.7.0
+      container_name: kafka-1
+      hostname: kafka-1
+      ports:
+        - "9092:9092"    # внутренний Docker
+        - "29092:29092"  # внешний для хоста
+      environment:
+        KAFKA_NODE_ID: 1
+        KAFKA_PROCESS_ROLES: broker,controller
+        KAFKA_LISTENERS: PLAINTEXT://:9092,EXTERNAL://:29092,CONTROLLER://:9093
+        KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-1:9092,EXTERNAL://localhost:29092
+        KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+        KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+        KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+        KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093
+        KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+        KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+        KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+        KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+        CLUSTER_ID: "crypto-streaming-cluster-v1"
+      deploy:
+        resources:
+          limits:
+            memory: 1G
+      healthcheck:
+        test: ["CMD", "/opt/kafka/bin/kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
+        interval: 30s
+        timeout: 10s
+        retries: 5
+
+  kafka-2:
     image: apache/kafka:3.7.0
-    container_name: kafka
-    hostname: kafka
+    container_name: kafka-2
+    hostname: kafka-2
     ports:
-      - "9092:9092"
+      - "9095:9092"
+      - "29093:29093"  # внешний для хоста
     environment:
-      KAFKA_NODE_ID: 1
+      KAFKA_NODE_ID: 2
       KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENERS: PLAINTEXT://:9092,EXTERNAL://:29093,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-2:9092,EXTERNAL://localhost:29093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      CLUSTER_ID: "crypto-streaming-cluster-v1"
     deploy:
       resources:
         limits:
-          memory: 2G
+          memory: 1G
     healthcheck:
       test: ["CMD", "/opt/kafka/bin/kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
       interval: 30s
       timeout: 10s
       retries: 5
 
-  # ─── Kafka 2 (Reconciliation) ────────────────────────────────
-  kafka-recon:
+  kafka-3:
     image: apache/kafka:3.7.0
-    container_name: kafka-recon
-    hostname: kafka-recon
+    container_name: kafka-3
+    hostname: kafka-3
     ports:
-      - "9094:9092"
+      - "9096:9092"
+      - "29094:29094"  # внешний для хоста
     environment:
-      KAFKA_NODE_ID: 2
+      KAFKA_NODE_ID: 3
       KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-recon:9092
+      KAFKA_LISTENERS: PLAINTEXT://:9092,EXTERNAL://:29094,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-3:9092,EXTERNAL://localhost:29094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 2@kafka-recon:9093
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka-1:9093,2@kafka-2:9093,3@kafka-3:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      CLUSTER_ID: "crypto-streaming-cluster-v1"
     deploy:
       resources:
         limits:
           memory: 1G
+    healthcheck:
+      test: ["CMD", "/opt/kafka/bin/kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   # ─── Schema Registry ─────────────────────────────────────────
   schema-registry:
@@ -57,13 +100,13 @@ services:
     container_name: schema-registry
     hostname: schema-registry
     depends_on:
-      kafka:
+      kafka-1:
         condition: service_healthy
     ports:
       - "8081:8081"
     environment:
       SCHEMA_REGISTRY_HOST_NAME: schema-registry
-      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kafka:9092
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kafka-1:9092,kafka-2:9092,kafka-3:9092
       SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
     deploy:
       resources:
@@ -92,19 +135,21 @@ services:
         s3.secret-key: minioadmin
         s3.path.style.access: true
     depends_on:
-      - kafka
-      - minio
+      kafka-1:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
     deploy:
       resources:
         limits:
           memory: 1G
 
-  # ─── Flink TaskManager ───────────────────────────────────────
-  flink-taskmanager:
+  # ─── Flink TaskManager 1 ─────────────────────────────────────
+  flink-taskmanager-1:
     build:
       context: ./docker/flink
-    container_name: flink-taskmanager
-    hostname: flink-taskmanager
+    container_name: flink-taskmanager-1
+    hostname: flink-taskmanager-1
     command: taskmanager
     environment:
       FLINK_PROPERTIES: |
@@ -124,7 +169,32 @@ services:
         limits:
           memory: 2G
 
-  # ─── MinIO (S3-compatible) ───────────────────────────────────
+  # ─── Flink TaskManager 2 ─────────────────────────────────────
+  flink-taskmanager-2:
+    build:
+      context: ./docker/flink
+    container_name: flink-taskmanager-2
+    hostname: flink-taskmanager-2
+    command: taskmanager
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.numberOfTaskSlots: 4
+        taskmanager.memory.process.size: 2048m
+        state.backend: rocksdb
+        state.checkpoints.dir: s3://flink-checkpoints/checkpoints
+        s3.endpoint: http://minio:9000
+        s3.access-key: minioadmin
+        s3.secret-key: minioadmin
+        s3.path.style.access: true
+    depends_on:
+      - flink-jobmanager
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+
+  # ─── MinIO ───────────────────────────────────────────────────
   minio:
     image: minio/minio:latest
     container_name: minio
@@ -148,7 +218,7 @@ services:
       timeout: 10s
       retries: 3
 
-  # ─── MinIO Init (создаёт bucket'ы) ───────────────────────────
+  # ─── MinIO Init ──────────────────────────────────────────────
   minio-init:
     image: minio/mc:latest
     container_name: minio-init
@@ -161,7 +231,7 @@ services:
       mc mb local/flink-checkpoints --ignore-existing;
       mc mb local/iceberg-warehouse --ignore-existing;
       mc mb local/raw-data --ignore-existing;
-      echo 'Buckets created';
+      echo 'Buckets created successfully';
       "
 
   # ─── ClickHouse ──────────────────────────────────────────────
@@ -194,13 +264,11 @@ services:
       - "8090:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: streaming
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-1:9092,kafka-2:9092,kafka-3:9092
       KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8081
-      KAFKA_CLUSTERS_1_NAME: reconciliation
-      KAFKA_CLUSTERS_1_BOOTSTRAPSERVERS: kafka-recon:9092
     depends_on:
-      - kafka
-      - kafka-recon
+      kafka-1:
+        condition: service_healthy
     deploy:
       resources:
         limits:
@@ -242,29 +310,49 @@ services:
 
   # ─── Airflow ─────────────────────────────────────────────────
   airflow:
-    image: apache/airflow:2.9.0
+    image: apache/airflow:2.9.0-python3.11
     container_name: airflow
+    hostname: airflow
     ports:
       - "8082:8080"
     environment:
-      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__EXECUTOR: SequentialExecutor
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: sqlite:////opt/airflow/airflow.db
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__WEBSERVER__SECRET_KEY: crypto-streaming-secret
+      AIRFLOW__WEBSERVER__WORKERS: 1
     volumes:
       - ./airflow/dags:/opt/airflow/dags
+      - airflow-data:/opt/airflow
     command: >
-      bash -c "airflow db init &&
-               airflow users create --username admin --password admin
-               --firstname Admin --lastname User
-               --role Admin --email admin@example.com &&
-               airflow webserver & airflow scheduler"
+      bash -c "
+        airflow db migrate &&
+        airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com &&
+        airflow scheduler &
+        airflow webserver
+      "
     deploy:
       resources:
         limits:
           memory: 1G
 
+  # ─── Nessie Catalog (Iceberg) ────────────────────────────────
+  nessie:
+    image: ghcr.io/projectnessie/nessie:latest
+    container_name: nessie
+    hostname: nessie
+    ports:
+      - "19120:19120"
+    environment:
+      NESSIE_VERSION_STORE_TYPE: IN_MEMORY
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
 volumes:
   minio-data:
   clickhouse-data:
   grafana-data:
+  airflow-data:
+  nessie-data:

@@ -1,0 +1,14 @@
+# Kafka
+confluent-kafka==2.3.0
+
+# Avro serialization
+fastavro==1.9.4
+
+# WebSocket client for Binance/Coinbase
+websockets==12.0
+
+# Utilities
+python-dotenv==1.0.0
+
+# HTTP client (required by confluent-kafka schema registry)
+requests==2.31.0

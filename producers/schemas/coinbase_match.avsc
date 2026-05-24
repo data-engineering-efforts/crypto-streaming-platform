@@ -1,0 +1,83 @@
+{
+  "namespace": "com.crypto.streaming.coinbase",
+  "type": "record",
+  "name": "CoinbaseTrade",
+  "doc": "Raw trade event from Coinbase WebSocket stream",
+  "fields": [
+    {
+      "name": "type",
+      "type": {
+        "type": "enum",
+        "name": "MatchType",
+        "symbols": ["match", "last_match"]
+      },
+      "doc": "match = live trade, last_match = snapshot on connect"
+    },
+    {
+      "name": "trade_id",
+      "type": "string",
+      "doc": "Unique trade ID from Coinbase (string UUID format)"
+    },
+    {
+      "name": "sequence",
+      "type": "long",
+      "doc": "Sequence number for ordering and deduplication"
+    },
+    {
+      "name": "maker_order_id",
+      "type": "string",
+      "doc": "UUID of the maker order (limit order in book)"
+    },
+    {
+      "name": "taker_order_id",
+      "type": "string",
+      "doc": "UUID of the taker order (aggressive market order)"
+    },
+    {
+      "name": "event_time",
+      "type": "long",
+      "logicalType": "timestamp-millis",
+      "doc": "Trade execution time in milliseconds (converted from ISO string)"
+    },
+    {
+      "name": "product_id",
+      "type": "string",
+      "doc": "Trading pair symbol e.g. BTC-USD, ETH-USD"
+    },
+    {
+      "name": "size",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 18,
+        "scale": 8
+      },
+      "doc": "Trade quantity in base asset (BTC, ETH)"
+    },
+    {
+      "name": "price",
+      "type": {
+        "type": "bytes",
+        "logicalType": "decimal",
+        "precision": 18,
+        "scale": 8
+      },
+      "doc": "Trade execution price in quote asset (USD)"
+    },
+    {
+      "name": "side",
+      "type": {
+        "type": "enum",
+        "name": "TradeSide",
+        "symbols": ["buy", "sell"]
+      },
+      "doc": "Trade side: buy = taker bought, sell = taker sold"
+    },
+    {
+      "name": "ingestion_time",
+      "type": "long",
+      "logicalType": "timestamp-millis",
+      "doc": "Timestamp when Producer received the event"
+    }
+  ]
+}
