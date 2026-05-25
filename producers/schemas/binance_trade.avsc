@@ -46,18 +46,6 @@
       "doc": "Trade quantity in base asset (BTC, ETH)"
     },
     {
-      "name": "buyer_order_id",
-      "type": ["long", "null"],
-      "default": 0,
-      "doc": "Buyer order ID (deprecated by Binance, may be absent)"
-    },
-    {
-      "name": "seller_order_id",
-      "type": ["long", "null"],
-      "default": 0,
-      "doc": "Seller order ID (deprecated by Binance, may be absent)"
-    },
-    {
       "name": "trade_time",
       "type": "long",
       "logicalType": "timestamp-millis",

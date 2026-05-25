@@ -25,7 +25,7 @@ services:
       deploy:
         resources:
           limits:
-            memory: 1G
+            memory: 2G
       healthcheck:
         test: ["CMD", "/opt/kafka/bin/kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
         interval: 30s
@@ -56,7 +56,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 2G
     healthcheck:
       test: ["CMD", "/opt/kafka/bin/kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
       interval: 30s
@@ -87,7 +87,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 2G
     healthcheck:
       test: ["CMD", "/opt/kafka/bin/kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
       interval: 30s
@@ -142,7 +142,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 2G
 
   # ─── Flink TaskManager 1 ─────────────────────────────────────
   flink-taskmanager-1:
@@ -155,7 +155,8 @@ services:
       FLINK_PROPERTIES: |
         jobmanager.rpc.address: flink-jobmanager
         taskmanager.numberOfTaskSlots: 4
-        taskmanager.memory.process.size: 2048m
+        taskmanager.memory.process.size: 4096m
+        taskmanager.memory.managed.fraction: 0.4
         state.backend: rocksdb
         state.checkpoints.dir: s3://flink-checkpoints/checkpoints
         s3.endpoint: http://minio:9000
@@ -167,7 +168,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2G
+          memory: 4G
 
   # ─── Flink TaskManager 2 ─────────────────────────────────────
   flink-taskmanager-2:
@@ -180,7 +181,8 @@ services:
       FLINK_PROPERTIES: |
         jobmanager.rpc.address: flink-jobmanager
         taskmanager.numberOfTaskSlots: 4
-        taskmanager.memory.process.size: 2048m
+        taskmanager.memory.process.size: 4096m
+        taskmanager.memory.managed.fraction: 0.4
         state.backend: rocksdb
         state.checkpoints.dir: s3://flink-checkpoints/checkpoints
         s3.endpoint: http://minio:9000
@@ -192,7 +194,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2G
+          memory: 4G
 
   # ─── MinIO ───────────────────────────────────────────────────
   minio:
