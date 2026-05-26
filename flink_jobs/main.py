@@ -1,0 +1,108 @@
+import subprocess
+import logging
+import os
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(name)s] %(levelname)s: %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+JOBS = [
+    "vwap_job.py",
+    # "whale_job.py",
+    # "arbitrage_job.py",
+    # "orderbook_job.py",
+    # "double_bottom_job.py",
+]
+
+FLINK_CONTAINER = "flink-jobmanager"
+FLINK_JOBS_DIR  = "/opt/flink/usrlib"
+
+
+def ensure_jobs_dir():
+    """Create jobs directory in container if not exists."""
+    result = subprocess.run(
+        ["docker", "exec", FLINK_CONTAINER,
+         "mkdir", "-p", FLINK_JOBS_DIR],
+        capture_output=True,
+        text=True
+    )
+    if result.returncode == 0:
+        logger.info(f"Jobs directory ready: {FLINK_JOBS_DIR}")
+    else:
+        raise RuntimeError(
+            f"Failed to create jobs dir: {result.stderr}"
+        )
+
+def copy_job(job_file: str):
+    """Copy job file from local to Flink container."""
+    local_path = os.path.join(
+        os.path.dirname(__file__),
+        job_file
+    )
+    container_path = f"{FLINK_JOBS_DIR}/{job_file}"
+
+    result = subprocess.run(
+        ["docker", "cp", local_path,
+         f"{FLINK_CONTAINER}:{container_path}"],
+        capture_output=True,
+        text=True
+    )
+    if result.returncode == 0:
+        logger.info(f"Copied {job_file} → {container_path}")
+    else:
+        raise RuntimeError(
+            f"Copy failed for {job_file}: {result.stderr}"
+        )
+
+def submit_job(job_file: str):
+    """Submit Flink job in detached mode."""
+    container_path = f"{FLINK_JOBS_DIR}/{job_file}"
+
+    result = subprocess.run(
+        [
+            "docker", "exec", FLINK_CONTAINER,
+            "flink", "run", "-py", container_path, "-d"
+        ],
+        capture_output=True,
+        text=True
+    )
+
+    output = result.stdout.strip() or result.stderr.strip()
+
+    if result.returncode == 0:
+        logger.info(f"Job submitted: {job_file}\n{output}")
+    else:
+        raise RuntimeError(
+            f"Submit failed for {job_file}: {output}"
+        )
+
+def main():
+    logger.info("Starting Flink Jobs submission...")
+
+    # create jobs directory in container
+    ensure_jobs_dir()
+
+    # run each job independently
+    success = 0
+    failed  = 0
+
+    for job_file in JOBS:
+        try:
+            logger.info(f"Submitting: {job_file}")
+            copy_job(job_file)
+            submit_job(job_file)
+            success += 1
+        except Exception as e:
+            logger.error(f"Failed to submit {job_file}: {e}")
+            failed += 1
+            continue  # do not stop on failure, attempt to submit remaining jobs
+
+    logger.info(
+        f"Submission complete | "
+        f"success={success} | failed={failed}"
+    )
+
+if __name__ == "__main__":
+    main()
