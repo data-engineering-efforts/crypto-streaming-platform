@@ -158,7 +158,7 @@ class BinanceProducer(BaseProducer):
                 return
 
             # change debug log to info for normal trade events, keep warning for whales
-            self.logger.info(
+            self.logger.debug(
                 f"Trade | symbol={trade.symbol} | "
                 f"price={trade.price:.2f} | "
                 f"qty={trade.quantity:.8f} | " 
@@ -196,8 +196,7 @@ class BinanceProducer(BaseProducer):
 
                 async with websockets.connect(
                     self.ws_url,
-                    ping_interval=20,
-                    ping_timeout=10,
+                    ping_interval=None,
                     close_timeout=10,
                 ) as websocket:
 

@@ -6,8 +6,8 @@ services:
       container_name: kafka-1
       hostname: kafka-1
       ports:
-        - "9092:9092"    # внутренний Docker
-        - "29092:29092"  # внешний для хоста
+        - "9092:9092"    # internal Docker
+        - "29092:29092"  # external for host
       environment:
         KAFKA_NODE_ID: 1
         KAFKA_PROCESS_ROLES: broker,controller
@@ -26,6 +26,8 @@ services:
         resources:
           limits:
             memory: 2G
+      volumes:
+        - kafka-1-data:/var/lib/kafka/data
       healthcheck:
         test: ["CMD", "/opt/kafka/bin/kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
         interval: 30s
@@ -37,8 +39,8 @@ services:
     container_name: kafka-2
     hostname: kafka-2
     ports:
-      - "9095:9092"
-      - "29093:29093"  # внешний для хоста
+      #- "9095:9092"
+      - "29093:29093"  # external for host
     environment:
       KAFKA_NODE_ID: 2
       KAFKA_PROCESS_ROLES: broker,controller
@@ -57,6 +59,8 @@ services:
       resources:
         limits:
           memory: 2G
+    volumes:
+      - kafka-2-data:/var/lib/kafka/data
     healthcheck:
       test: ["CMD", "/opt/kafka/bin/kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
       interval: 30s
@@ -68,8 +72,8 @@ services:
     container_name: kafka-3
     hostname: kafka-3
     ports:
-      - "9096:9092"
-      - "29094:29094"  # внешний для хоста
+      #- "9096:9092"
+      - "29094:29094"  # external for host
     environment:
       KAFKA_NODE_ID: 3
       KAFKA_PROCESS_ROLES: broker,controller
@@ -88,6 +92,8 @@ services:
       resources:
         limits:
           memory: 2G
+    volumes:
+      - kafka-3-data:/var/lib/kafka/data
     healthcheck:
       test: ["CMD", "/opt/kafka/bin/kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
       interval: 30s
@@ -101,6 +107,10 @@ services:
     hostname: schema-registry
     depends_on:
       kafka-1:
+        condition: service_healthy
+      kafka-2:
+        condition: service_healthy
+      kafka-3:
         condition: service_healthy
     ports:
       - "8081:8081"
@@ -239,7 +249,7 @@ services:
   # ─── ClickHouse ──────────────────────────────────────────────
   clickhouse:
     image: clickhouse/clickhouse-server:24.3-alpine
-    platform: linux/arm64
+    #platform: linux/arm64
     container_name: clickhouse
     hostname: clickhouse
     ports:
@@ -353,6 +363,9 @@ services:
           memory: 512M
 
 volumes:
+  kafka-1-data:
+  kafka-2-data:
+  kafka-3-data:
   minio-data:
   clickhouse-data:
   grafana-data:

@@ -164,7 +164,7 @@ class CoinbaseProducer(BaseProducer):
 
                     symbol = self._normalize_symbol(parsed.product_id)
 
-                    self.logger.info(
+                    self.logger.debug(
                         f"Trade | symbol={symbol} | "
                         f"price={parsed.price:.2f} | "
                         f"size={parsed.size:.8f} | " 
@@ -204,7 +204,12 @@ class CoinbaseProducer(BaseProducer):
                     f"Connecting to Coinbase WS: {self.ws_url}"
                 )
 
-                async with websockets.connect(self.ws_url) as websocket:
+                async with websockets.connect(
+                    self.ws_url,
+                    ping_interval=None,
+                    close_timeout=10,
+                ) as websocket:
+                    
                     await websocket.send(json.dumps(subscribe_msg))
                     self.logger.info("Subscribed to market_trades")
                     reconnect_delay = 1
