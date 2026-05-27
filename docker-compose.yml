@@ -1,6 +1,6 @@
 services:
 
-  # ─── Kafka Broker 1 ──────────────────────────────────────────
+  # Kafka Broker 1
   kafka-1:
       image: apache/kafka:3.7.0
       container_name: kafka-1
@@ -100,7 +100,7 @@ services:
       timeout: 10s
       retries: 5
 
-  # ─── Schema Registry ─────────────────────────────────────────
+  # Schema Registry
   schema-registry:
     image: confluentinc/cp-schema-registry:7.6.0
     container_name: schema-registry
@@ -154,7 +154,7 @@ services:
         limits:
           memory: 2G
 
-  # ─── Flink TaskManager 1 ─────────────────────────────────────
+  # Flink TaskManager 1
   flink-taskmanager-1:
     build:
       context: ./docker/flink
@@ -180,7 +180,7 @@ services:
         limits:
           memory: 4G
 
-  # ─── Flink TaskManager 2 ─────────────────────────────────────
+  # Flink TaskManager 2
   flink-taskmanager-2:
     build:
       context: ./docker/flink
@@ -206,7 +206,33 @@ services:
         limits:
           memory: 4G
 
-  # ─── MinIO ───────────────────────────────────────────────────
+  # Flink TaskManager 3
+  flink-taskmanager-3:
+    build:
+      context: ./docker/flink
+    container_name: flink-taskmanager-3
+    hostname: flink-taskmanager-3
+    command: taskmanager
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: flink-jobmanager
+        taskmanager.numberOfTaskSlots: 4
+        taskmanager.memory.process.size: 4096m
+        taskmanager.memory.managed.fraction: 0.4
+        state.backend: rocksdb
+        state.checkpoints.dir: s3://flink-checkpoints/checkpoints
+        s3.endpoint: http://minio:9000
+        s3.access-key: minioadmin
+        s3.secret-key: minioadmin
+        s3.path.style.access: true
+    depends_on:
+      - flink-jobmanager
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+
+  # MinIO
   minio:
     image: minio/minio:latest
     container_name: minio
@@ -246,7 +272,7 @@ services:
       echo 'Buckets created successfully';
       "
 
-  # ─── ClickHouse ──────────────────────────────────────────────
+  # ClickHouse
   clickhouse:
     image: clickhouse/clickhouse-server:24.3-alpine
     #platform: linux/arm64
@@ -268,7 +294,7 @@ services:
       timeout: 10s
       retries: 3
 
-  # ─── Kafka UI ────────────────────────────────────────────────
+  # Kafka UI
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
@@ -286,7 +312,7 @@ services:
         limits:
           memory: 256M
 
-  # ─── Prometheus ──────────────────────────────────────────────
+  # Prometheus
   prometheus:
     image: prom/prometheus:v2.51.0
     container_name: prometheus
@@ -299,7 +325,7 @@ services:
         limits:
           memory: 512M
 
-  # ─── Grafana ─────────────────────────────────────────────────
+  # Grafana
   grafana:
     image: grafana/grafana:10.4.0
     container_name: grafana
@@ -320,7 +346,7 @@ services:
         limits:
           memory: 512M
 
-  # ─── Airflow ─────────────────────────────────────────────────
+  # Airflow
   airflow:
     image: apache/airflow:2.9.0-python3.11
     container_name: airflow
@@ -348,7 +374,7 @@ services:
         limits:
           memory: 1G
 
-  # ─── Nessie Catalog (Iceberg) ────────────────────────────────
+  # Nessie Catalog (Iceberg)
   nessie:
     image: ghcr.io/projectnessie/nessie:latest
     container_name: nessie

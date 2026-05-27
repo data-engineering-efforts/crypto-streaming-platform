@@ -28,35 +28,35 @@ def main():
 
         NewTopic(
             topic="raw-binance-trades",
-            num_partitions=3,  # 3 partitions for 3 symbols: BTCUSDT, ETHUSDT, SOLUSDT
+            num_partitions=3, # 3 partitions for 3 symbols: BTCUSDT, ETHUSDT, SOLUSDT
             replication_factor=REPLICATION_FACTOR,
             config={
                 "min.insync.replicas": MIN_ISR,
-                "retention.ms": "86400000",   # 24h raw data stored in Iceberg
-                "compression.type": "lz4",    # latency sensitive, fast compression
+                "retention.ms": "86400000", # 24h raw data stored in Iceberg
+                "compression.type": "lz4",  # latency sensitive, fast compression
                 "cleanup.policy": "delete"
             }
         ),
 
         NewTopic(
             topic="raw-coinbase-match",
-            num_partitions=3,  # 3 partitions for 3 symbols: BTC-USD, ETH-USD, SOL-USD
+            num_partitions=3, # 3 partitions for 3 symbols: BTC-USD, ETH-USD, SOL-USD
             replication_factor=REPLICATION_FACTOR,
             config={
                 "min.insync.replicas": MIN_ISR,
-                "retention.ms": "21600000",   # 6h needed for Arbitrage Job replay
-                "compression.type": "lz4",    # latency sensitive, fast compression
+                "retention.ms": "21600000", # 6h needed for Arbitrage Job replay
+                "compression.type": "lz4",  # latency sensitive, fast compression
                 "cleanup.policy": "delete"
             }
         ),
 
         NewTopic(
             topic="raw-orderbook",
-            num_partitions=3,  # 3 partitions for 3 symbols: BTCUSDT, ETHUSDT, SOLUSDT
+            num_partitions=3, # 3 partitions for 3 symbols: BTCUSDT, ETHUSDT, SOLUSDT
             replication_factor=REPLICATION_FACTOR,
             config={
                 "min.insync.replicas": MIN_ISR,
-                "retention.ms": "21600000",   # 6h orderbook data becomes stale quickly
+                "retention.ms": "21600000", # 6h orderbook data becomes stale quickly
                 "compression.type": "snappy", # high throughput with repeating price patterns
                 "cleanup.policy": "delete"
             }
@@ -64,67 +64,67 @@ def main():
 
         NewTopic(
             topic="whale-alerts",
-            num_partitions=1,  # low volume of alerts, single partition is enough
+            num_partitions=1, # low volume of alerts, single partition is enough
             replication_factor=REPLICATION_FACTOR,
             config={
                 "min.insync.replicas": MIN_ISR,
-                "retention.ms": "172800000",  # 48h buffer for ClickHouse recovery
-                "compression.type": "zstd",   # not latency sensitive, better compression
+                "retention.ms": "172800000", # 48h buffer for ClickHouse recovery
+                "compression.type": "zstd", # not latency sensitive, better compression
                 "cleanup.policy": "delete"
             }
         ),
 
         NewTopic(
             topic="dlq-events",
-            num_partitions=1,  # low volume, single partition preserves order for debugging
+            num_partitions=1, # low volume, single partition preserves order for debugging
             replication_factor=REPLICATION_FACTOR,
             config={
                 "min.insync.replicas": MIN_ISR,
-                "retention.ms": "604800000",  # 7d time to investigate and fix issues
-                "compression.type": "zstd",   # not latency sensitive, save disk space
+                "retention.ms": "604800000", # 7d time to investigate and fix issues
+                "compression.type": "zstd", # not latency sensitive, save disk space
                 "cleanup.policy": "delete"
             }
         ),
 
         NewTopic(
             topic="recon-status",
-            num_partitions=1,  # one result per hour, single partition is enough
+            num_partitions=1, # one result per hour, single partition is enough
             replication_factor=REPLICATION_FACTOR,
             config={
                 "min.insync.replicas": MIN_ISR,
-                "retention.ms": "604800000",  # 7d audit trail for reconciliation history
-                "compression.type": "zstd",   # low volume, long retention, save disk space
+                "retention.ms": "604800000", # 7d audit trail for reconciliation history
+                "compression.type": "zstd", # low volume, long retention, save disk space
                 "cleanup.policy": "delete"
             }
         ),
 
         NewTopic(
             topic="recon-alerts",
-            num_partitions=1,  # fired only on mismatch, single partition is enough
+            num_partitions=1, # fired only on mismatch, single partition is enough
             replication_factor=REPLICATION_FACTOR,
             config={
                 "min.insync.replicas": MIN_ISR,
-                "retention.ms": "604800000",  # 7d audit trail for mismatch history
-                "compression.type": "zstd",   # low volume, long retention, save disk space
+                "retention.ms": "604800000", # 7d audit trail for mismatch history
+                "compression.type": "zstd", # low volume, long retention, save disk space
                 "cleanup.policy": "delete"
             }
         ),
 
         NewTopic(
             topic="recon-corrections",
-            num_partitions=3,  # 3 partitions for 3 symbols: BTC, ETH, SOL
+            num_partitions=3, # 3 partitions for 3 symbols: BTC, ETH, SOL
             replication_factor=REPLICATION_FACTOR,
             config={
                 "min.insync.replicas": MIN_ISR,
-                "retention.ms": "604800000",  # 7d audit trail for corrections
-                "compression.type": "zstd",   # low volume, long retention, save disk space
+                "retention.ms": "604800000", # 7d audit trail for corrections
+                "compression.type": "zstd", # low volume, long retention, save disk space
                 "cleanup.policy": "delete"
             }
         )
     ]
 
     create_topics(admin, topics)
-    logger.info("All topics created successfully!")
+    logger.info("All topics created successfully")
 
 if __name__ == "__main__":
     main()

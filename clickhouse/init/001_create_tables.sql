@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS whale_alerts
     quantity Float64,
     trade_value Float64,
     exchange String,
+    side String,
     event_time DateTime,
     version UInt64
 ) ENGINE = ReplacingMergeTree(version)

@@ -22,6 +22,9 @@ FLINK_JOBS_DIR  = "/opt/flink/usrlib"
 
 def ensure_jobs_dir():
     """Create jobs directory in container if not exists."""
+
+    # launch flink-jobmanager and create directory inside docke (usrlib) for jobs if not exists (-p)
+    # equal to: docker exec flink-jobmanager mkdir -p /opt/flink/usrlib
     result = subprocess.run(
         ["docker", "exec", FLINK_CONTAINER,
          "mkdir", "-p", FLINK_JOBS_DIR],
@@ -37,12 +40,15 @@ def ensure_jobs_dir():
 
 def copy_job(job_file: str):
     """Copy job file from local to Flink container."""
+    # create absolute path to job file
     local_path = os.path.join(
         os.path.dirname(__file__),
         job_file
     )
     container_path = f"{FLINK_JOBS_DIR}/{job_file}"
 
+    # copy job file to container using docker cp
+    # docker cp /project/flink_jobs/{job_file} flink-jobmanager:/opt/flink/usrlib/{job_file}
     result = subprocess.run(
         ["docker", "cp", local_path,
          f"{FLINK_CONTAINER}:{container_path}"],
@@ -60,6 +66,8 @@ def submit_job(job_file: str):
     """Submit Flink job in detached mode."""
     container_path = f"{FLINK_JOBS_DIR}/{job_file}"
 
+    # run job in detached mode (-d) using docker exec not to block main thread
+    # equal to: docker exec flink-jobmanager flink run -py /opt/flink/usrlib/{job_file} -d
     result = subprocess.run(
         [
             "docker", "exec", FLINK_CONTAINER,
