@@ -148,7 +148,7 @@ class BaseProducer(ABC):
             )
         except Exception as dlq_err:
             self.logger.critical(
-                f"CRITICAL: DLQ routing failed! Data may be lost. "
+                f"CRITICAL: DLQ routing failed. Data may be lost. "
                 f"Error: {dlq_err} | Original key: {key}"
             )
 
@@ -189,6 +189,6 @@ class BaseProducer(ABC):
     async def start(self):
         """
         Starts the main ingestion loop.
-        Must call asyncio.create_task(self._poll_loop()) at the beginning!
+        Must call asyncio.create_task(self._poll_loop()) at the beginning
         """
         pass
