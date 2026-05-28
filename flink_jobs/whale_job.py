@@ -52,8 +52,6 @@ def main():
     t_env = StreamTableEnvironment.create(env)
     t_env.get_config().set("table.exec.source.idle-timeout", "5000ms")
     #t_env.get_config().set(
-    #"table.exec.legacy-cast-behaviour", "enabled"
-    #)
 
     # Source Table for Binance (Kafka -> Flink)
     t_env.execute_sql("""

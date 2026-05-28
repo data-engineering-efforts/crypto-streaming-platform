@@ -11,9 +11,8 @@ logger = logging.getLogger(__name__)
 JOBS = [
     "vwap_job.py",
     "whale_job.py",
-    # "arbitrage_job.py",
-    # "orderbook_job.py",
-    # "double_bottom_job.py",
+    "arbitrage_job.py",
+    #"double_bottom_job.py",
 ]
 
 FLINK_JOB_MANAGER = "flink-jobmanager"
