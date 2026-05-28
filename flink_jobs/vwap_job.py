@@ -4,19 +4,16 @@ from pyflink.common.typeinfo import Types
 from pyflink.datastream import StreamExecutionEnvironment, MapFunction
 from pyflink.table import StreamTableEnvironment
 
-from sinks.clickhouse_sink import ClickHouseSink
+from sinks.clickhouse_sink import (
+    ClickHouseSink,
+    CLICKHOUSE_HOST,
+    CLICKHOUSE_PORT,
+    CLICKHOUSE_DB,
+    CLICKHOUSE_USER,
+    CLICKHOUSE_PASSWORD
+)
 
 logger = logging.getLogger(__name__)
-
-CLICKHOUSE_HOST = "clickhouse"
-CLICKHOUSE_PORT = 9000
-CLICKHOUSE_DB = "default"
-CLICKHOUSE_USER = "default"
-CLICKHOUSE_PASSWORD = ""
-
-from datetime import datetime
-from sinks.clickhouse_sink import ClickHouseSink
-
 
 class VwapClickHouseSink(ClickHouseSink):
     """VWAP aggregation sink."""
@@ -37,85 +34,15 @@ class VwapClickHouseSink(ClickHouseSink):
         window_start = datetime.strptime(value[1][:19], "%Y-%m-%d %H:%M:%S")
         window_end   = datetime.strptime(value[2][:19], "%Y-%m-%d %H:%M:%S")
         return (
-            value[0],      # symbol
-            window_start,  # window_start
-            window_end,    # window_end
-            value[3],      # vwap
-            value[4],      # total_volume
-            value[5],      # trade_count
-            value[6],      # interval_label
-            window_start,  # version
+            value[0], # symbol
+            window_start, # window_start
+            window_end, # window_end
+            value[3], # vwap
+            value[4], # total_volume
+            value[5], # trade_count
+            value[6], # interval_label
+            int(window_start.timestamp()), # version
         )
-
-
-# class ClickHouseSink(MapFunction):
-#     """
-#     ClickHouse sink implemented as MapFunction.
-#     MapFunction supports open(), close() lifecycle.
-#     Each record is written immediately, suitable for low volume outputs
-#     like VWAP aggregations (3 symbols * 1 window per 5 minutes = 3 rows).
-#     """
-
-#     def __init__(self, host: str, port: int, database: str, user: str, password: str):
-#         self.host = host
-#         self.port = port
-#         self.database = database
-#         self.user = user
-#         self.password = password
-#         self.client = None
-
-#     def open(self, runtime_context):
-#         """Create ClickHouse connection once per TaskManager slot"""
-#         self.client = clickhouse_driver.Client(
-#             host=self.host,
-#             port=self.port,
-#             database=self.database,
-#             user=self.user,
-#             password=self.password,
-#         )
-#         logger.info(f"ClickHouse connection opened: {self.host}:{self.port}")
-
-#     def map(self, value):
-#         """
-#         Called for each record from Flink window.
-#         Writes directly to ClickHouse without buffering.
-#         Must return value which is required by MapFunction contract.
-#         """
-#         window_start = datetime.strptime(value[1][:19], "%Y-%m-%d %H:%M:%S")
-#         window_end   = datetime.strptime(value[2][:19], "%Y-%m-%d %H:%M:%S")
-
-#         record = (
-#             value[0], # symbol
-#             window_start, # window_start datetime
-#             window_end, # window_end datetime
-#             value[3], # vwap
-#             value[4], # total_volume
-#             value[5], # trade_count
-#             value[6], # interval_label
-#             window_start, # version = window_start
-#         )
-
-#         try:
-#             self.client.execute(
-#                 """
-#                 INSERT INTO vwap_aggregations
-#                     (symbol, window_start, window_end, vwap,
-#                      total_volume, trade_count, interval_label, version)
-#                 VALUES
-#                 """,
-#                 [record],
-#             )
-#             logger.info(f"Inserted record to ClickHouse: {value[0]} {value[1]}")
-#         except Exception as e:
-#             logger.error(f"ClickHouse insert failed: {e}")
-
-#         return value
-
-#     def close(self):
-#         """Close ClickHouse connection."""
-#         if self.client:
-#             self.client.disconnect()
-#             logger.info("ClickHouse connection closed")
 
 def main():
     # Environment Setup
@@ -181,10 +108,10 @@ def main():
         ])
     )
 
-    # Sink (Flink -> ClickHouse), values are inserted one by one in map() method of ClickHouseSink
+    # Sink (Flink -> ClickHouse), values are inserted one by one in map() method of VwapClickHouseSink
     # parameter value is a row from result_table
     result_stream.map(
-        ClickHouseSink(
+        VwapClickHouseSink(
             host=CLICKHOUSE_HOST,
             port=CLICKHOUSE_PORT,
             database=CLICKHOUSE_DB,

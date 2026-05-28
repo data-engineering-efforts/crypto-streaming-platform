@@ -36,12 +36,8 @@
     },
     {
       "name": "side",
-      "type": {
-        "type": "enum",
-        "name": "TradeSide",
-        "symbols": ["BUY", "SELL"]
-      },
-      "doc": "BUY = taker bought, SELL = taker sold"
+      "type": "string",
+      "doc": "Trade direction: BUY or SELL"
     },
     {
       "name": "event_time",
