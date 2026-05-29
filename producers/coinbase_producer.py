@@ -120,14 +120,11 @@ class CoinbaseProducer(BaseProducer):
         )
         if trade.size >= threshold:
             self._log_whale(
-                symbol=symbol,
+                symbol=self._normalize_symbol(trade.product_id),
                 quantity=trade.size,
                 price=trade.price,
                 side=trade.side
             )
-
-            self._log_whale(self._normalize_symbol(trade.product_id),
-                            trade.size, trade.price, trade.side)
 
     async def _handle_message(self, raw_message: str):
         """

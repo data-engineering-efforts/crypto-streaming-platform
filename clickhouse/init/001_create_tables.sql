@@ -54,17 +54,15 @@ CREATE TABLE IF NOT EXISTS double_bottom_signals
 ORDER BY (symbol, confirmed_at);
 
 -- Reconciliation results
-CREATE TABLE IF NOT EXISTS recon_results
-(
-    symbol String,
-    window_start DateTime,
-    window_end DateTime,
-    streaming_vwap Float64,
-    batch_vwap Float64,
-    delta Float64,
-    delta_pct Float64,
-    status String,
-    checked_at DateTime,
-    version UInt64
+CREATE TABLE IF NOT EXISTS recon_results (
+    run_time        DateTime,
+    window_start    DateTime,
+    window_end      DateTime,
+    symbol          String,
+    streaming_vwap  Float64,
+    batch_vwap      Float64,
+    diff_pct        Float64,
+    status          String,
+    version         UInt64
 ) ENGINE = ReplacingMergeTree(version)
-ORDER BY (symbol, window_start);
+ORDER BY (symbol, window_start, run_time)

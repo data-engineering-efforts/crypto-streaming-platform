@@ -84,19 +84,19 @@ def main():
             PARTITION BY symbol
             ORDER BY trade_time_ts
             MEASURES
-                FIRST(FIRST_DIP.price_d)                  AS first_dip,
-                LAST(SECOND_DIP.price_d)                  AS second_dip,
-                LAST(PEAK.price_d)                        AS peak_price,
-                LAST(BREAK.price_d)                       AS breakout_price,
+                FIRST(FIRST_DIP.price_d) AS first_dip,
+                LAST(SECOND_DIP.price_d) AS second_dip,
+                LAST(PEAK.price_d) AS peak_price,
+                LAST(BREAK.price_d) AS breakout_price,
                 CAST(LAST(BREAK.trade_time_ts) AS STRING) AS confirmed_at
             ONE ROW PER MATCH
             PATTERN (FIRST_DIP+ PEAK+ SECOND_DIP+ BREAK)
             WITHIN INTERVAL '10' MINUTE
             DEFINE
-                FIRST_DIP  AS price_d < PREV(price_d, 1),
-                PEAK       AS price_d > PREV(price_d, 1),
+                FIRST_DIP AS price_d < PREV(price_d, 1),
+                PEAK AS price_d > PREV(price_d, 1),
                 SECOND_DIP AS price_d < PREV(price_d, 1),
-                BREAK      AS price_d > FIRST(PEAK.price_d)
+                BREAK AS price_d > FIRST(PEAK.price_d)
         )
     """)
 

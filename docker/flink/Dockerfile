@@ -39,4 +39,14 @@ RUN wget -P /opt/flink/lib/ \
 RUN mkdir -p /opt/flink/plugins/s3-fs-hadoop && \
     cp /opt/flink/opt/flink-s3-fs-hadoop-*.jar /opt/flink/plugins/s3-fs-hadoop/
 
+# Iceberg runtime (includes Nessie catalog)
+RUN wget -P /opt/flink/lib/ \
+    https://repo1.maven.org/maven2/org/apache/iceberg/iceberg-flink-runtime-1.19/1.7.1/iceberg-flink-runtime-1.19-1.7.1.jar
+
+RUN wget -P /opt/flink/lib/ \
+    https://repo1.maven.org/maven2/org/apache/iceberg/iceberg-aws-bundle/1.7.1/iceberg-aws-bundle-1.7.1.jar
+
+RUN wget -P /opt/flink/lib/ \
+    https://repo1.maven.org/maven2/org/apache/flink/flink-shaded-hadoop-2-uber/2.8.3-10.0/flink-shaded-hadoop-2-uber-2.8.3-10.0.jar
+
 WORKDIR /opt/flink

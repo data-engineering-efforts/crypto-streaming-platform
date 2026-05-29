@@ -132,9 +132,6 @@ class BinanceProducer(BaseProducer):
                 side=side
             )
 
-            self._log_whale(trade.symbol, trade.quantity, trade.price,
-                    side)
-
     async def _handle_message(self, raw_message: str):
         """
         Processes a single WebSocket message.

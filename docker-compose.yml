@@ -6,7 +6,7 @@ services:
       container_name: kafka-1
       hostname: kafka-1
       ports:
-        - "9092:9092"    # internal Docker
+        - "9092:9092"  # internal Docker
         - "29092:29092"  # external for host
       environment:
         KAFKA_NODE_ID: 1
@@ -123,7 +123,7 @@ services:
         limits:
           memory: 512M
 
-  # ─── Flink JobManager ────────────────────────────────────────
+  # Flink JobManager
   flink-jobmanager:
     build:
       context: ./docker/flink
@@ -267,8 +267,7 @@ services:
       /bin/sh -c "
       mc alias set local http://minio:9000 minioadmin minioadmin;
       mc mb local/flink-checkpoints --ignore-existing;
-      mc mb local/iceberg-warehouse --ignore-existing;
-      mc mb local/raw-data --ignore-existing;
+      mc mb local/warehouse --ignore-existing;
       echo 'Buckets created successfully';
       "
 

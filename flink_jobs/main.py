@@ -13,6 +13,7 @@ JOBS = [
     "whale_job.py",
     "arbitrage_job.py",
     "double_bottom_job.py",
+    "iceberg_sink_job.py"
 ]
 
 FLINK_JOB_MANAGER = "flink-jobmanager"
@@ -166,6 +167,38 @@ def configure_clickhouse():
         raise RuntimeError(
             f"Failed to reload ClickHouse config: {result.stderr}"
         )
+    
+def init_iceberg():
+    """Copy and run Iceberg initialization script in JobManager."""
+    local_path = os.path.join(
+        os.path.dirname(__file__),
+        "init_iceberg.py"
+    )
+
+    # copy script to container
+    subprocess.run(
+        ["docker", "cp", local_path,
+         f"{FLINK_JOB_MANAGER}:/tmp/init_iceberg.py"],
+        capture_output=True,
+        text=True,
+        check=True
+    )
+
+    # run script
+    result = subprocess.run(
+        ["docker", "exec", FLINK_JOB_MANAGER,
+         "python3", "/tmp/init_iceberg.py"],
+        capture_output=True,
+        text=True
+    )
+
+    if result.returncode == 0:
+        for line in result.stdout.strip().split("\n"):
+            logger.info(f"[Iceberg-Init] {line}")
+    else:
+        raise RuntimeError(
+            f"Iceberg init failed: {result.stderr}"
+        )
         
 def main():
     logger.info("Starting Flink Jobs submission...")
@@ -175,6 +208,13 @@ def main():
         configure_clickhouse()
     except Exception as e:
         logger.error(f"Critical: ClickHouse configuration failed: {e}")
+        return
+    
+   # initialize Iceberg tables
+    try:
+        init_iceberg()
+    except Exception as e:
+        logger.error(f"Critical error initializing Iceberg: {e}")
         return
 
     # create jobs directory in container

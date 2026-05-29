@@ -51,30 +51,6 @@ def main():
         ),
 
         NewTopic(
-            topic="raw-orderbook",
-            num_partitions=3, # 3 partitions for 3 symbols: BTCUSDT, ETHUSDT, SOLUSDT
-            replication_factor=REPLICATION_FACTOR,
-            config={
-                "min.insync.replicas": MIN_ISR,
-                "retention.ms": "21600000", # 6h orderbook data becomes stale quickly
-                "compression.type": "snappy", # high throughput with repeating price patterns
-                "cleanup.policy": "delete"
-            }
-        ),
-
-        NewTopic(
-            topic="whale-alerts",
-            num_partitions=1, # low volume of alerts, single partition is enough
-            replication_factor=REPLICATION_FACTOR,
-            config={
-                "min.insync.replicas": MIN_ISR,
-                "retention.ms": "172800000", # 48h buffer for ClickHouse recovery
-                "compression.type": "zstd", # not latency sensitive, better compression
-                "cleanup.policy": "delete"
-            }
-        ),
-
-        NewTopic(
             topic="dlq-events",
             num_partitions=1, # low volume, single partition preserves order for debugging
             replication_factor=REPLICATION_FACTOR,
