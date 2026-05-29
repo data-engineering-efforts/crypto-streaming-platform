@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 from pyflink.common.typeinfo import Types
-from pyflink.datastream import StreamExecutionEnvironment, MapFunction
+from pyflink.datastream import StreamExecutionEnvironment
 from pyflink.table import StreamTableEnvironment
 
 from sinks.clickhouse_sink import (
@@ -116,7 +116,7 @@ def main():
                 AND b.trade_time_ts + INTERVAL '10' SECOND
         WHERE
             (ABS(CAST(b.price AS DOUBLE) - CAST(c.price AS DOUBLE))
-                / CAST(b.price AS DOUBLE)) * 100 > 0.1
+                / CAST(b.price AS DOUBLE)) * 100 > 0.2
     """)
 
     result_stream = t_env.to_append_stream(

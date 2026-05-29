@@ -40,26 +40,13 @@ CREATE TABLE IF NOT EXISTS arbitrage_signals
 ) ENGINE = ReplacingMergeTree(version)
 ORDER BY (symbol, event_time);
 
--- Order book imbalance
-CREATE TABLE IF NOT EXISTS orderbook_imbalance
-(
-    symbol String,
-    bid_volume Float64,
-    ask_volume Float64,
-    imbalance_ratio Float64,
-    signal String,
-    event_time DateTime,
-    version UInt64
-) ENGINE = ReplacingMergeTree(version)
-ORDER BY (symbol, event_time);
-
 -- Double Bottom CEP signals
 CREATE TABLE IF NOT EXISTS double_bottom_signals
 (
     symbol String,
-    starting_price Float64,
     first_dip Float64,
     second_dip Float64,
+    peak_price Float64,
     breakout_price Float64,
     confirmed_at DateTime,
     version UInt64

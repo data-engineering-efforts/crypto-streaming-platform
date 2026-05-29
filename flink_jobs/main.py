@@ -12,7 +12,7 @@ JOBS = [
     "vwap_job.py",
     "whale_job.py",
     "arbitrage_job.py",
-    #"double_bottom_job.py",
+    "double_bottom_job.py",
 ]
 
 FLINK_JOB_MANAGER = "flink-jobmanager"
@@ -23,7 +23,7 @@ FLINK_CONTAINERS = [
     "flink-jobmanager",
     "flink-taskmanager-1",
     "flink-taskmanager-2",
-    "flink-taskmanager-3",
+    "flink-taskmanager-3"
 ]
 
 def ensure_jobs_dir():

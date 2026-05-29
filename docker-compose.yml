@@ -164,7 +164,7 @@ services:
     environment:
       FLINK_PROPERTIES: |
         jobmanager.rpc.address: flink-jobmanager
-        taskmanager.numberOfTaskSlots: 4
+        taskmanager.numberOfTaskSlots: 8
         taskmanager.memory.process.size: 4096m
         taskmanager.memory.managed.fraction: 0.4
         state.backend: rocksdb
@@ -178,7 +178,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 4G
+          memory: 6G
 
   # Flink TaskManager 2
   flink-taskmanager-2:
@@ -190,7 +190,7 @@ services:
     environment:
       FLINK_PROPERTIES: |
         jobmanager.rpc.address: flink-jobmanager
-        taskmanager.numberOfTaskSlots: 4
+        taskmanager.numberOfTaskSlots: 8
         taskmanager.memory.process.size: 4096m
         taskmanager.memory.managed.fraction: 0.4
         state.backend: rocksdb
@@ -204,7 +204,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 4G
+          memory: 6G
 
   # Flink TaskManager 3
   flink-taskmanager-3:
@@ -216,7 +216,7 @@ services:
     environment:
       FLINK_PROPERTIES: |
         jobmanager.rpc.address: flink-jobmanager
-        taskmanager.numberOfTaskSlots: 4
+        taskmanager.numberOfTaskSlots: 8
         taskmanager.memory.process.size: 4096m
         taskmanager.memory.managed.fraction: 0.4
         state.backend: rocksdb
@@ -230,7 +230,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 4G
+          memory: 6G
 
   # MinIO
   minio:

@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime
 from pyflink.common.typeinfo import Types
-from pyflink.datastream import StreamExecutionEnvironment, MapFunction
+from pyflink.datastream import StreamExecutionEnvironment
 from pyflink.table import StreamTableEnvironment
 
 from sinks.clickhouse_sink import (
@@ -64,7 +64,9 @@ def main():
             quantity DECIMAL(18, 8),
             trade_time BIGINT,
             is_buyer_maker BOOLEAN,
-            ingestion_time BIGINT
+            ingestion_time BIGINT,
+            trade_time_ts AS TO_TIMESTAMP_LTZ(trade_time, 3),
+            WATERMARK FOR trade_time_ts AS trade_time_ts - INTERVAL '10' SECOND
         ) WITH (
             'connector' = 'kafka',
             'topic' = 'raw-binance-trades',
