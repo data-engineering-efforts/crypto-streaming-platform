@@ -363,17 +363,17 @@ services:
     volumes:
       - ./airflow/dags:/opt/airflow/dags
       - airflow-data:/opt/airflow
-    command: >
-      bash -c "
-        airflow db migrate &&
-        airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com &&
-        airflow scheduler &
-        airflow webserver
-      "
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./flink_jobs:/opt/airflow/flink_jobs
+    command: bash -c "pip install clickhouse-driver docker && airflow db migrate && airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com 2>/dev/null || true && airflow scheduler & airflow webserver --port 8080"
     deploy:
       resources:
         limits:
-          memory: 1G
+          memory: 2G
+    depends_on:
+      - clickhouse
+      - minio
+      - nessie
 
   # Nessie Catalog (Iceberg)
   nessie:
