@@ -45,12 +45,12 @@ def main():
     logger.info("Creating coinbase_trades_raw...")
     t_env.execute_sql("""
         CREATE TABLE IF NOT EXISTS coinbase_trades_raw (
-            trade_id       STRING,
-            product_id     STRING,
-            price          DOUBLE,
-            size           DOUBLE,
-            side           STRING,
-            event_time     BIGINT,
+            trade_id STRING,
+            product_id STRING,
+            price DOUBLE,
+            size DOUBLE,
+            side STRING,
+            event_time BIGINT,
             ingestion_time BIGINT
         )
     """)

@@ -1,6 +1,6 @@
 import logging
-from pyflink.datastream import StreamExecutionEnvironment
-from pyflink.table import StreamTableEnvironment, EnvironmentSettings
+from pyflink.datastream import StreamExecutionEnvironment, CheckpointingMode
+from pyflink.table import StreamTableEnvironment
 
 logger = logging.getLogger(__name__)
 
@@ -10,7 +10,14 @@ def main():
     # Environment Setup
     env = StreamExecutionEnvironment.get_execution_environment()
     env.set_parallelism(1)
-    env.enable_checkpointing(300000)
+    
+    env.enable_checkpointing(300000)  # Trigger checkpoint every 5 minutes
+    ch_config = env.get_checkpoint_config()
+    ch_config.set_checkpointing_mode(CheckpointingMode.EXACTLY_ONCE)
+    ch_config.set_checkpoint_timeout(120000)        # 2 minutes timeout
+    ch_config.set_min_pause_between_checkpoints(60000) # 1 minute pause between checkpoints
+    ch_config.set_tolerable_checkpoint_failures(2)
+    ch_config.set_max_concurrent_checkpoints(1)
 
     t_env = StreamTableEnvironment.create(env)
     t_env.get_config().set("table.exec.source.idle-timeout", "5000ms")
@@ -42,7 +49,8 @@ def main():
             'topic' = 'raw-binance-trades',
             'properties.bootstrap.servers' = 'kafka-1:9092,kafka-2:9092,kafka-3:9092',
             'properties.group.id' = 'flink-iceberg-binance-consumer',
-            'scan.startup.mode' = 'latest-offset',
+            'scan.startup.mode' = 'group-offsets',
+            'properties.auto.offset.reset' = 'latest',
             'format' = 'avro-confluent',
             'avro-confluent.url' = 'http://schema-registry:8081'
         )
@@ -66,7 +74,8 @@ def main():
             'topic' = 'raw-coinbase-match',
             'properties.bootstrap.servers' = 'kafka-1:9092,kafka-2:9092,kafka-3:9092',
             'properties.group.id' = 'flink-iceberg-coinbase-consumer',
-            'scan.startup.mode' = 'latest-offset',
+            'scan.startup.mode' = 'group-offsets',
+            'properties.auto.offset.reset' = 'latest',
             'format' = 'avro-confluent',
             'avro-confluent.url' = 'http://schema-registry:8081'
         )
@@ -101,7 +110,7 @@ def main():
     """)
 
     # run both inserts as a single Flink job
-    stmt_set.execute()
+    stmt_set.execute("Iceberg Sink Job - Binance and Coinbase Raw Trades")
 
 if __name__ == "__main__":
     main()

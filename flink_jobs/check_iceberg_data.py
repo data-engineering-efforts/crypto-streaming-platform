@@ -1,6 +1,5 @@
 import logging
 import sys
-from unittest import result
 
 from pyflink.table import EnvironmentSettings, TableEnvironment
 from datetime import datetime, timedelta, timezone
@@ -26,8 +25,8 @@ def main():
     """)
 
     now = datetime.now(timezone.utc)
-    window_end = now.replace(minute=0, second=0, microsecond=0)
-    window_start = window_end - timedelta(hours=1)
+    window_start = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=2)
+    window_end = now
     start_ms = int(window_start.timestamp() * 1000)
     end_ms = int(window_end.timestamp() * 1000)
 

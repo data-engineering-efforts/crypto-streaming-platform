@@ -37,7 +37,7 @@ def compute_batch_vwap(t_env, window_start: datetime, window_end: datetime) -> d
     Returns dict: {symbol: batch_vwap}
     """
     window_start_ms = int(window_start.timestamp() * 1000)
-    window_end_ms   = int(window_end.timestamp() * 1000)
+    window_end_ms = int(window_end.timestamp() * 1000)
 
     result = t_env.execute_sql(f"""
         SELECT
