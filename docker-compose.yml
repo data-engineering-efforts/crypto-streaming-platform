@@ -178,7 +178,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 6G
+          memory: 8G
 
   # Flink TaskManager 2
   flink-taskmanager-2:
@@ -204,7 +204,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 6G
+          memory: 8G
 
   # Flink TaskManager 3
   flink-taskmanager-3:
@@ -230,7 +230,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 6G
+          memory: 8G
 
   # MinIO
   minio:
@@ -349,7 +349,9 @@ services:
 
   # Airflow
   airflow:
-    image: apache/airflow:2.9.0-python3.11
+    build:
+      context: ./airflow
+      dockerfile: Dockerfile
     container_name: airflow
     hostname: airflow
     ports:
@@ -360,12 +362,14 @@ services:
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__WEBSERVER__SECRET_KEY: crypto-streaming-secret
       AIRFLOW__WEBSERVER__WORKERS: 1
+      PYTHONPATH: /opt/airflow
     volumes:
       - ./airflow/dags:/opt/airflow/dags
+      - ./airflow/operators:/opt/airflow/operators
       - airflow-data:/opt/airflow
       - /var/run/docker.sock:/var/run/docker.sock
       - ./flink_jobs:/opt/airflow/flink_jobs
-    command: bash -c "pip install clickhouse-driver docker && airflow db migrate && airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com 2>/dev/null || true && airflow scheduler & airflow webserver --port 8080"
+    command: bash -c "airflow db init && airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com 2>/dev/null || true && airflow scheduler & airflow webserver --port 8080"
     deploy:
       resources:
         limits:

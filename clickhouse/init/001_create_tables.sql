@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS vwap_aggregations
     interval_label String,
     version UInt64
 ) ENGINE = ReplacingMergeTree(version)
-ORDER BY (symbol, window_start, interval_label);
+ORDER BY (symbol, window_start);
 
 -- Whale alerts
 CREATE TABLE IF NOT EXISTS whale_alerts

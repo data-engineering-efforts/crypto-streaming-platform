@@ -4,14 +4,15 @@ from pyflink.common.typeinfo import Types
 from pyflink.datastream import StreamExecutionEnvironment
 from pyflink.table import StreamTableEnvironment
 
-from sinks.clickhouse_sink import (
-    ClickHouseSink,
+from shared.config import (
     CLICKHOUSE_HOST,
     CLICKHOUSE_PORT,
     CLICKHOUSE_DB,
     CLICKHOUSE_USER,
     CLICKHOUSE_PASSWORD
 )
+
+from shared.clickhouse_sink import ClickHouseSink
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +52,6 @@ def main():
 
     t_env = StreamTableEnvironment.create(env)
     t_env.get_config().set("table.exec.source.idle-timeout", "5000ms")
-    #t_env.get_config().set(
 
     # Source Table for Binance (Kafka -> Flink)
     t_env.execute_sql("""

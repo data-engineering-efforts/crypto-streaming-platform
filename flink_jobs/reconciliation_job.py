@@ -1,43 +1,35 @@
 import logging
-from datetime import datetime, timedelta
+import sys
+
+from datetime import datetime, timezone, timedelta
 import clickhouse_driver
 from pyflink.table import EnvironmentSettings, TableEnvironment
 
+logging.basicConfig(
+    stream=sys.stdout,
+    level=logging.INFO,
+    format="%(asctime)s [%(name)s] %(levelname)s: %(message)s"
+)
 logger = logging.getLogger(__name__)
 
-CLICKHOUSE_HOST = "clickhouse"
-CLICKHOUSE_PORT = 9000
-CLICKHOUSE_USER = "default"
-CLICKHOUSE_PASSWORD = ""
-
-NESSIE_CATALOG_PROPERTIES = """
-    'type' = 'iceberg',
-    'catalog-impl' = 'org.apache.iceberg.nessie.NessieCatalog',
-    'uri' = 'http://nessie:19120/api/v1',
-    'ref' = 'main',
-    'warehouse' = 's3://warehouse/',
-    'io-impl' = 'org.apache.iceberg.aws.s3.S3FileIO',
-    's3.endpoint' = 'http://minio:9000',
-    's3.access-key-id' = 'minioadmin',
-    's3.secret-access-key' = 'minioadmin',
-    's3.path-style-access' = 'true',
-    's3.region' = 'us-east-1',
-    'client.region' = 'us-east-1',
-    's3.endpoint-override' = 'http://minio:9000'
-"""
-
-DIFF_THRESHOLD_PCT = 0.01
+from shared.config import (
+    CLICKHOUSE_HOST,
+    CLICKHOUSE_PORT,
+    CLICKHOUSE_USER,
+    CLICKHOUSE_PASSWORD,
+    NESSIE_CATALOG_PROPERTIES,
+    DIFF_THRESHOLD_PCT
+)
 
 def get_time_window():
     """
     Get the last completed hour window for reconciliation.
     Example: if now is 17:35, returns (16:00, 17:00)
     """
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     window_end = now.replace(minute=0, second=0, microsecond=0)
     window_start = window_end - timedelta(hours=1)
     return window_start, window_end
-
 
 def compute_batch_vwap(t_env, window_start: datetime, window_end: datetime) -> dict:
     """
@@ -50,17 +42,19 @@ def compute_batch_vwap(t_env, window_start: datetime, window_end: datetime) -> d
     result = t_env.execute_sql(f"""
         SELECT
             symbol,
-            SUM(price * quantity) / SUM(quantity) AS batch_vwap
+            COALESCE(SUM(price * quantity) / SUM(quantity), 0.0) AS batch_vwap
         FROM nessie_catalog.crypto.binance_trades_raw
         WHERE trade_time >= {window_start_ms}
-          AND trade_time <  {window_end_ms}
+          AND trade_time < {window_end_ms}
         GROUP BY symbol
     """)
 
     batch_vwap = {}
+
+    # only one row per symbol, so we can collect results directly
     with result.collect() as rows:
         for row in rows:
-            symbol     = row[0]
+            symbol = row[0]
             vwap_value = row[1]
             batch_vwap[symbol] = vwap_value
             logger.info(f"Batch VWAP: {symbol} = {vwap_value:.4f}")
@@ -82,7 +76,7 @@ def get_streaming_vwap(window_start: datetime, window_end: datetime) -> dict:
     rows = client.execute("""
         SELECT
             symbol,
-            avg(vwap) AS streaming_vwap
+            SUM(vwap * total_volume) / SUM(total_volume) AS streaming_vwap
         FROM vwap_aggregations
         WHERE window_start >= %(start)s
           AND window_end <= %(end)s
@@ -101,7 +95,6 @@ def get_streaming_vwap(window_start: datetime, window_end: datetime) -> dict:
 
     client.disconnect()
     return streaming_vwap
-
 
 def save_results(results: list):
     """Write reconciliation results to ClickHouse recon_results table."""
@@ -125,7 +118,6 @@ def save_results(results: list):
     client.disconnect()
     logger.info(f"Saved {len(results)} recon results to ClickHouse")
 
-
 def main():
     logging.basicConfig(
         level=logging.INFO,
@@ -143,33 +135,41 @@ def main():
     """)
 
     window_start, window_end = get_time_window()
-    logger.info(f"Reconciliation window: {window_start} → {window_end}")
+    logger.info(f"Reconciliation window: {window_start} - {window_end}")
 
     logger.info("Computing batch VWAP from Iceberg...")
     batch_vwap = compute_batch_vwap(t_env, window_start, window_end)
 
     if not batch_vwap:
-        logger.warning("No data in Iceberg for this window — skipping")
+        logger.warning("No data in Iceberg for this windows. Skipping reconciliation.")
         return
 
     logger.info("Reading streaming VWAP from ClickHouse...")
     streaming_vwap = get_streaming_vwap(window_start, window_end)
 
     if not streaming_vwap:
-        logger.warning("No data in ClickHouse for this window — skipping")
+        logger.warning("No data in ClickHouse for this window. Skipping reconciliation.")
         return
 
-    run_time = datetime.utcnow()
+    run_time = datetime.now(timezone.utc)
     results = []
 
     all_symbols = set(batch_vwap.keys()) | set(streaming_vwap.keys())
 
     for symbol in all_symbols:
-        b_vwap = batch_vwap.get(symbol)
-        s_vwap = streaming_vwap.get(symbol)
+        b_vwap = batch_vwap.get(symbol, 0.0)
+        s_vwap = streaming_vwap.get(symbol, 0.0)
 
-        if b_vwap is None or s_vwap is None:
-            logger.warning(f"{symbol}: missing data in one source")
+        if b_vwap == 0.0 and s_vwap == 0.0:
+                logger.warning(f"{symbol}: No data found in both Iceberg and ClickHouse. Skipping.")
+                continue
+
+        if b_vwap == 0.0:
+            logger.error(f"{symbol}: CRITICAL | Data exists in ClickHouse ({s_vwap:.4f}) but missing in Iceberg!")
+            continue
+
+        if s_vwap == 0.0:
+            logger.error(f"{symbol}: CRITICAL | Data exists in Iceberg ({b_vwap:.4f}) but missing in ClickHouse!")
             continue
 
         diff_pct = abs(b_vwap - s_vwap) / b_vwap * 100

@@ -1,4 +1,15 @@
+import logging
+import sys
+
 from pyflink.table import EnvironmentSettings, TableEnvironment
+from shared.config import NESSIE_CATALOG_PROPERTIES
+
+logging.basicConfig(
+    stream=sys.stdout,
+    level=logging.INFO,
+    format="%(asctime)s [%(name)s] %(levelname)s: %(message)s"
+)
+logger = logging.getLogger(__name__)
 
 def main():
     t_env = TableEnvironment.create(
@@ -6,22 +17,10 @@ def main():
     )
 
     # create Nessie catalog
-    print("Creating Nessie catalog...")
-    t_env.execute_sql("""
+    logger.info("Creating Nessie catalog...")
+    t_env.execute_sql(f"""
         CREATE CATALOG nessie_catalog WITH (
-            'type' = 'iceberg',
-            'catalog-impl' = 'org.apache.iceberg.nessie.NessieCatalog',
-            'uri' = 'http://nessie:19120/api/v1',
-            'ref' = 'main',
-            'warehouse' = 's3://warehouse/',
-            'io-impl' = 'org.apache.iceberg.aws.s3.S3FileIO',
-            's3.endpoint' = 'http://minio:9000',
-            's3.access-key-id' = 'minioadmin',
-            's3.secret-access-key' = 'minioadmin',
-            's3.path-style-access' = 'true',
-            's3.region' = 'us-east-1',
-            'client.region' = 'us-east-1',
-            's3.endpoint-override' = 'http://minio:9000'
+            {NESSIE_CATALOG_PROPERTIES}
         )
     """)
 
@@ -30,20 +29,20 @@ def main():
     t_env.execute_sql("USE crypto")
 
     # raw Binance trades for Reconciliation
-    print("Creating binance_trades_raw...")
+    logger.info("Creating binance_trades_raw...")
     t_env.execute_sql("""
         CREATE TABLE IF NOT EXISTS binance_trades_raw (
-            symbol         STRING,
-            price          DOUBLE,
-            quantity       DOUBLE,
-            trade_time     BIGINT,
+            symbol STRING,
+            price DOUBLE,
+            quantity DOUBLE,
+            trade_time BIGINT,
             is_buyer_maker BOOLEAN,
             ingestion_time BIGINT
         )
     """)
 
     # raw Coinbase trades for Reconciliation
-    print("Creating coinbase_trades_raw...")
+    logger.info("Creating coinbase_trades_raw...")
     t_env.execute_sql("""
         CREATE TABLE IF NOT EXISTS coinbase_trades_raw (
             trade_id       STRING,
@@ -56,7 +55,7 @@ def main():
         )
     """)
 
-    print("Iceberg tables initialized successfully")
+    logger.info("Iceberg tables initialized successfully")
 
 if __name__ == "__main__":
     main()

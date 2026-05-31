@@ -8,23 +8,23 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-JOBS = [
-    "vwap_job.py",
-    "whale_job.py",
-    "arbitrage_job.py",
-    "double_bottom_job.py",
-    "iceberg_sink_job.py"
-]
-
-FLINK_JOB_MANAGER = "flink-jobmanager"
-FLINK_JOBS_DIR  = "/opt/flink/usrlib"
+FLINK_JOB_MANAGER    = "flink-jobmanager"
+FLINK_JOBS_DIR       = "/opt/flink/usrlib"
 CLICKHOUSE_CONTAINER = "clickhouse"
 
 FLINK_CONTAINERS = [
     "flink-jobmanager",
     "flink-taskmanager-1",
     "flink-taskmanager-2",
-    "flink-taskmanager-3"
+    "flink-taskmanager-3",
+]
+
+JOBS = [
+    "vwap_job.py",
+    "whale_job.py",
+    "arbitrage_job.py",
+    "double_bottom_job.py",
+    "iceberg_sink_job.py",
 ]
 
 def ensure_jobs_dir():
@@ -186,7 +186,9 @@ def init_iceberg():
 
     # run script
     result = subprocess.run(
-        ["docker", "exec", FLINK_JOB_MANAGER,
+        ["docker", "exec",
+         "-e", f"PYTHONPATH={FLINK_JOBS_DIR}",
+         FLINK_JOB_MANAGER,
          "python3", "/tmp/init_iceberg.py"],
         capture_output=True,
         text=True
@@ -202,6 +204,13 @@ def init_iceberg():
         
 def main():
     logger.info("Starting Flink Jobs submission...")
+
+    # copy shared modules to container before submitting jobs that depend on them
+    try:
+        copy_dir("shared")
+    except Exception as e:
+        logger.error(f"Critical error copying shared modules: {e}")
+        return
 
     # configure ClickHouse to allow remote connections
     try:
@@ -220,13 +229,6 @@ def main():
     # create jobs directory in container
     ensure_jobs_dir()
 
-    # copy shared modules (sinks) to container before submitting jobs that depend on them
-    try:
-        copy_dir("sinks")
-    except Exception as e:
-        logger.error(f"Critical error copying shared modules: {e}")
-        return
-
     # run each job independently
     success = 0
     failed  = 0
@@ -240,7 +242,7 @@ def main():
         except Exception as e:
             logger.error(f"Failed to submit {job_file}: {e}")
             failed += 1
-            continue  # do not stop on failure, attempt to submit remaining jobs
+            continue # do not stop on failure, attempt to submit remaining jobs
 
     logger.info(
         f"Submission complete | "

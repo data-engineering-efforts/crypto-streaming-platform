@@ -4,27 +4,13 @@ from pyflink.table import StreamTableEnvironment, EnvironmentSettings
 
 logger = logging.getLogger(__name__)
 
-NESSIE_CATALOG_PROPERTIES = """
-    'type' = 'iceberg',
-    'catalog-impl' = 'org.apache.iceberg.nessie.NessieCatalog',
-    'uri' = 'http://nessie:19120/api/v1',
-    'ref' = 'main',
-    'warehouse' = 's3://warehouse/',
-    'io-impl' = 'org.apache.iceberg.aws.s3.S3FileIO',
-    's3.endpoint' = 'http://minio:9000',
-    's3.access-key-id' = 'minioadmin',
-    's3.secret-access-key' = 'minioadmin',
-    's3.path-style-access' = 'true',
-    's3.region' = 'us-east-1',
-    'client.region' = 'us-east-1',
-    's3.endpoint-override' = 'http://minio:9000'
-"""
+from shared.config import NESSIE_CATALOG_PROPERTIES
 
 def main():
     # Environment Setup
     env = StreamExecutionEnvironment.get_execution_environment()
     env.set_parallelism(1)
-    env.enable_checkpointing(60000)
+    env.enable_checkpointing(300000)
 
     t_env = StreamTableEnvironment.create(env)
     t_env.get_config().set("table.exec.source.idle-timeout", "5000ms")

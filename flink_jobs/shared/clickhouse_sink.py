@@ -4,12 +4,6 @@ import clickhouse_driver
 
 logger = logging.getLogger(__name__)
 
-CLICKHOUSE_HOST = "clickhouse"
-CLICKHOUSE_PORT = 9000
-CLICKHOUSE_DB = "default"
-CLICKHOUSE_USER = "default"
-CLICKHOUSE_PASSWORD = ""
-
 class ClickHouseSink(MapFunction):
     """
     Base ClickHouse sink implemented as MapFunction.
