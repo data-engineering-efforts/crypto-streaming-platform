@@ -16,11 +16,12 @@ def main():
     ch_config.set_checkpointing_mode(CheckpointingMode.EXACTLY_ONCE)
     ch_config.set_checkpoint_timeout(120000)        # 2 minutes timeout
     ch_config.set_min_pause_between_checkpoints(60000) # 1 minute pause between checkpoints
-    ch_config.set_tolerable_checkpoint_failures(2)
+    ch_config.set_tolerable_checkpoint_failure_number(2)
     ch_config.set_max_concurrent_checkpoints(1)
 
     t_env = StreamTableEnvironment.create(env)
     t_env.get_config().set("table.exec.source.idle-timeout", "5000ms")
+    t_env.get_config().set("pipeline.name", "Iceberg Sink Job - Binance and Coinbase Raw Trades")
 
     # Nessie Catalog
     t_env.execute_sql(f"""
@@ -110,7 +111,7 @@ def main():
     """)
 
     # run both inserts as a single Flink job
-    stmt_set.execute("Iceberg Sink Job - Binance and Coinbase Raw Trades")
+    stmt_set.execute()
 
 if __name__ == "__main__":
     main()

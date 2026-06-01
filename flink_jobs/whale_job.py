@@ -73,7 +73,8 @@ def main():
             'properties.bootstrap.servers' = 'kafka-1:9092,kafka-2:9092,kafka-3:9092',
             'properties.group.id' = 'flink-whale-binance-consumer',
             'format' = 'avro-confluent',
-            'scan.startup.mode' = 'latest-offset',
+            'scan.startup.mode' = 'group-offsets',
+            'properties.auto.offset.reset' = 'latest',
             'avro-confluent.url' = 'http://schema-registry:8081'
         )
     """)
@@ -87,14 +88,17 @@ def main():
             size DECIMAL(18, 8),
             side STRING,
             event_time BIGINT,
-            ingestion_time BIGINT
+            ingestion_time BIGINT,
+            event_time_ts AS TO_TIMESTAMP_LTZ(event_time, 3),
+            WATERMARK FOR event_time_ts AS event_time_ts - INTERVAL '10' SECOND
         ) WITH (
             'connector'= 'kafka',
             'topic' = 'raw-coinbase-match',
             'properties.bootstrap.servers' = 'kafka-1:9092,kafka-2:9092,kafka-3:9092',
             'properties.group.id' = 'flink-whale-coinbase-consumer',
             'format' = 'avro-confluent',
-            'scan.startup.mode' = 'latest-offset',
+            'scan.startup.mode' = 'group-offsets',
+            'properties.auto.offset.reset' = 'latest',
             'avro-confluent.url' = 'http://schema-registry:8081'
         )
     """)
@@ -144,8 +148,6 @@ def main():
         ])
     )
 
-    # Sink (Flink -> ClickHouse), values are inserted one by one in map() method of ClickHouseSink
-    # parameter value is a row from result_table
     result_stream.map(
         WhaleClickHouseSink(
             host=CLICKHOUSE_HOST,
@@ -153,8 +155,10 @@ def main():
             database=CLICKHOUSE_DB,
             user=CLICKHOUSE_USER,
             password=CLICKHOUSE_PASSWORD,
+            batch_size=5, # we can buffer a few records to improve throughput
+            flush_interval_sec=1.0
         )
-    ).set_parallelism(1) # single connection to ClickHouse for simplicity, not a bottleneck for low volume of whale alerts
+    )
 
     env.execute("Whale Aggregation Job")
 

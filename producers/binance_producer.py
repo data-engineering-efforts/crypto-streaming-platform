@@ -46,7 +46,7 @@ class BinanceProducer(BaseProducer):
     Delivery guarantees:
         1. At-least-once from WebSocket perspective
         (data lost during downtime cannot be replayed)
-        2. Idempotent producer prevents network-level duplicates
+        2. Idempotent producer prevents network level duplicates
         3. True exactly-once starts at Flink checkpointing stage
     """
 

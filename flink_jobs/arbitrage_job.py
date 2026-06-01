@@ -117,7 +117,7 @@ def main():
                 AND b.trade_time_ts + INTERVAL '10' SECOND
         WHERE
             (ABS(CAST(b.price AS DOUBLE) - CAST(c.price AS DOUBLE))
-                / CAST(b.price AS DOUBLE)) * 100 > 0.2
+                / CAST(b.price AS DOUBLE)) * 100 > 0.1
     """)
 
     result_stream = t_env.to_append_stream(
@@ -133,8 +133,6 @@ def main():
         ])
     )
 
-    # Sink (Flink -> ClickHouse), values are inserted one by one in map() method of ArbitrageClickHouseSink
-    # parameter value is a row from result_table
     result_stream.map(
         ArbitrageClickHouseSink(
             host=CLICKHOUSE_HOST,
@@ -142,8 +140,10 @@ def main():
             database=CLICKHOUSE_DB,
             user=CLICKHOUSE_USER,
             password=CLICKHOUSE_PASSWORD,
+            batch_size=10,
+            flush_interval_sec=1.0
         )
-    ).set_parallelism(3)
+    )
 
     env.execute("Arbitrage Monitor Job")
 

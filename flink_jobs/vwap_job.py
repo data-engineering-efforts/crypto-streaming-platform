@@ -73,7 +73,8 @@ def main():
             'topic' = 'raw-binance-trades',
             'properties.bootstrap.servers' = 'kafka-1:9092,kafka-2:9092,kafka-3:9092',
             'properties.group.id' = 'flink-vwap-consumer',
-            'scan.startup.mode' = 'latest-offset',
+            'scan.startup.mode' = 'group-offsets',
+            'properties.auto.offset.reset' = 'latest',
             'format' = 'avro-confluent',
             'avro-confluent.url' = 'http://schema-registry:8081'
         )
@@ -109,8 +110,6 @@ def main():
         ])
     )
 
-    # Sink (Flink -> ClickHouse), values are inserted one by one in map() method of VwapClickHouseSink
-    # parameter value is a row from result_table
     result_stream.map(
         VwapClickHouseSink(
             host=CLICKHOUSE_HOST,
@@ -118,8 +117,16 @@ def main():
             database=CLICKHOUSE_DB,
             user=CLICKHOUSE_USER,
             password=CLICKHOUSE_PASSWORD,
+            # NOTE on Parallelism & Batch Size:
+            # We use batch_size=1 because the job runs with parallelism=3.
+            # Flink hash distributes the 3 keys (BTC, ETH, SOL) across 3 parallel sink slots.
+            # As a result, each parallel subtask receives exactly 1 record per 5 minute window.
+            # Setting batch_size>1 would cause records to stall in the internal buffers,
+            # With batch_size=1, each subtask flushes its single record immediately upon window closure.
+            batch_size=1, 
+            flush_interval_sec=2.0
         )
-    ).set_parallelism(1) # single connection to ClickHouse for simplicity, we have max 3 records per 5 minutes (3 symbols)
+    )
 
     env.execute("VWAP Aggregation Job")
 

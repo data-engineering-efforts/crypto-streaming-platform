@@ -51,6 +51,7 @@ def main():
 
     t_env = StreamTableEnvironment.create(env)
     t_env.get_config().set("table.exec.source.idle-timeout", "5000ms")
+    t_env.get_config().set("table.exec.state.ttl", "15min")
 
     # Source Table (Kafka -> Flink)
     t_env.execute_sql("""
@@ -72,7 +73,8 @@ def main():
             'topic' = 'raw-binance-trades',
             'properties.bootstrap.servers' = 'kafka-1:9092,kafka-2:9092,kafka-3:9092',
             'properties.group.id' = 'flink-double-bottom-consumer',
-            'scan.startup.mode' = 'latest-offset',
+            'scan.startup.mode' = 'group-offsets',
+            'properties.auto.offset.reset' = 'latest',
             'format' = 'avro-confluent',
             'avro-confluent.url' = 'http://schema-registry:8081'
         )
@@ -114,8 +116,6 @@ def main():
         ])
     )
 
-    # Sink (Flink -> ClickHouse), values are inserted one by one in map() method of DoubleBottomClickHouseSink
-    # parameter value is a row from result_table
     result_stream.map(
         DoubleBottomClickHouseSink(
             host=CLICKHOUSE_HOST,
@@ -123,8 +123,10 @@ def main():
             database=CLICKHOUSE_DB,
             user=CLICKHOUSE_USER,
             password=CLICKHOUSE_PASSWORD,
+            batch_size=1, # very rare signals, so we want to flush immediately
+            flush_interval_sec=0.0
         )
-    ).set_parallelism(1)
+    )
 
     env.execute("Double Bottom Pattern Job")
 
