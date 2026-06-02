@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pyflink.common.typeinfo import Types
 from pyflink.datastream import StreamExecutionEnvironment
 from pyflink.table import StreamTableEnvironment
@@ -40,7 +40,7 @@ class WhaleClickHouseSink(ClickHouseSink):
             value[4], # exchange
             value[5], # side
             event_time, # event_time
-            int(event_time.timestamp()) # version
+            int(event_time.replace(tzinfo=timezone.utc).timestamp()), # version
         )
 
 def main():

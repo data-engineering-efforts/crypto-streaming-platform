@@ -203,7 +203,8 @@ class CoinbaseProducer(BaseProducer):
 
                 async with websockets.connect(
                     self.ws_url,
-                    ping_interval=None,
+                    ping_interval=20,
+                    ping_timeout=20,
                     close_timeout=10,
                 ) as websocket:
                     
