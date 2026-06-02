@@ -1,0 +1,44 @@
+groups:
+  - name: kafka_alerts
+    rules:
+
+      # consumer lag greater than 10000 messages critical
+      # for: 15m so a transient backlog (after restart / cold start) that the
+      # job is actively catching up on doesn't page us — only sustained lag does.
+      - alert: KafkaConsumerLagCritical
+        expr: kafka_consumergroup_lag > 10000
+        for: 15m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Kafka consumer lag critical"
+          description: >
+            Consumer group {{ $labels.consumergroup }}
+            on topic {{ $labels.topic }}
+            partition {{ $labels.partition }}
+            lag={{ $value }}
+
+      # consumer lag greater than 1000 messages warning
+      - alert: KafkaConsumerLagWarning
+        expr: kafka_consumergroup_lag > 1000
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Kafka consumer lag warning"
+          description: >
+            Consumer group {{ $labels.consumergroup }}
+            lag={{ $value }}
+
+      # partitions under-replicated
+      - alert: KafkaUnderReplicatedPartitions
+        expr: kafka_topic_partition_under_replicated_partition > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Kafka under-replicated partitions detected"
+          description: >
+            Topic {{ $labels.topic }}
+            partition {{ $labels.partition }}
+            is under-replicated

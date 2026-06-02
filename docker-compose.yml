@@ -2,6 +2,7 @@ services:
 
   # Kafka Broker 1
   kafka-1:
+      restart: unless-stopped
       image: apache/kafka:3.7.0
       container_name: kafka-1
       hostname: kafka-1
@@ -35,6 +36,7 @@ services:
         retries: 5
 
   kafka-2:
+    restart: unless-stopped
     image: apache/kafka:3.7.0
     container_name: kafka-2
     hostname: kafka-2
@@ -68,6 +70,7 @@ services:
       retries: 5
 
   kafka-3:
+    restart: unless-stopped
     image: apache/kafka:3.7.0
     container_name: kafka-3
     hostname: kafka-3
@@ -102,6 +105,7 @@ services:
 
   # Schema Registry
   schema-registry:
+    restart: unless-stopped
     image: confluentinc/cp-schema-registry:7.6.0
     container_name: schema-registry
     hostname: schema-registry
@@ -125,6 +129,7 @@ services:
 
   # Flink JobManager
   flink-jobmanager:
+    restart: unless-stopped
     build:
       context: ./docker/flink
     container_name: flink-jobmanager
@@ -156,6 +161,7 @@ services:
 
   # Flink TaskManager 1
   flink-taskmanager-1:
+    restart: unless-stopped
     build:
       context: ./docker/flink
     container_name: flink-taskmanager-1
@@ -167,6 +173,7 @@ services:
         taskmanager.numberOfTaskSlots: 8
         taskmanager.memory.process.size: 4096m
         taskmanager.memory.managed.fraction: 0.4
+        taskmanager.memory.task.off-heap.size: 256m
         state.backend: rocksdb
         state.checkpoints.dir: s3://flink-checkpoints/checkpoints
         s3.endpoint: http://minio:9000
@@ -182,6 +189,7 @@ services:
 
   # Flink TaskManager 2
   flink-taskmanager-2:
+    restart: unless-stopped
     build:
       context: ./docker/flink
     container_name: flink-taskmanager-2
@@ -193,6 +201,7 @@ services:
         taskmanager.numberOfTaskSlots: 8
         taskmanager.memory.process.size: 4096m
         taskmanager.memory.managed.fraction: 0.4
+        taskmanager.memory.task.off-heap.size: 256m
         state.backend: rocksdb
         state.checkpoints.dir: s3://flink-checkpoints/checkpoints
         s3.endpoint: http://minio:9000
@@ -205,35 +214,9 @@ services:
       resources:
         limits:
           memory: 8G
-
-  # Flink TaskManager 3
-  flink-taskmanager-3:
-    build:
-      context: ./docker/flink
-    container_name: flink-taskmanager-3
-    hostname: flink-taskmanager-3
-    command: taskmanager
-    environment:
-      FLINK_PROPERTIES: |
-        jobmanager.rpc.address: flink-jobmanager
-        taskmanager.numberOfTaskSlots: 8
-        taskmanager.memory.process.size: 4096m
-        taskmanager.memory.managed.fraction: 0.4
-        state.backend: rocksdb
-        state.checkpoints.dir: s3://flink-checkpoints/checkpoints
-        s3.endpoint: http://minio:9000
-        s3.access-key: minioadmin
-        s3.secret-key: minioadmin
-        s3.path.style.access: true
-    depends_on:
-      - flink-jobmanager
-    deploy:
-      resources:
-        limits:
-          memory: 8G
-
   # MinIO
   minio:
+    restart: unless-stopped
     image: minio/minio:latest
     container_name: minio
     hostname: minio
@@ -256,8 +239,9 @@ services:
       timeout: 10s
       retries: 3
 
-  # ─── MinIO Init ──────────────────────────────────────────────
+  # MinIO Init
   minio-init:
+    restart: on-failure
     image: minio/mc:latest
     container_name: minio-init
     depends_on:
@@ -273,6 +257,7 @@ services:
 
   # ClickHouse
   clickhouse:
+    restart: unless-stopped
     image: clickhouse/clickhouse-server:24.3-alpine
     #platform: linux/arm64
     container_name: clickhouse
@@ -280,21 +265,25 @@ services:
     ports:
       - "8123:8123"
       - "9000:9000"
+      - "9363:9363"
     volumes:
       - ./clickhouse/init:/docker-entrypoint-initdb.d
       - clickhouse-data:/var/lib/clickhouse
+      - ./clickhouse/config/prometheus.xml:/etc/clickhouse-server/config.d/prometheus.xml
+      - ./clickhouse/config/users.d/default-user.xml:/etc/clickhouse-server/users.d/default-user.xml
     deploy:
       resources:
         limits:
           memory: 2G
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
+      test: ["CMD-SHELL", "clickhouse-client --query 'SELECT 1' || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
 
   # Kafka UI
   kafka-ui:
+    restart: unless-stopped
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
     ports:
@@ -311,14 +300,39 @@ services:
         limits:
           memory: 256M
 
+# Kafka Exporter — exposes consumer lag metrics for Prometheus
+  kafka-exporter:
+    image: danielqsj/kafka-exporter:latest
+    container_name: kafka-exporter
+    ports:
+      - "9308:9308"
+    command:
+      - --kafka.server=kafka-1:9092
+      - --kafka.server=kafka-2:9092
+      - --kafka.server=kafka-3:9092
+    restart: unless-stopped
+    depends_on:
+      kafka-1:
+        condition: service_healthy
+      kafka-2:
+        condition: service_healthy
+      kafka-3:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
   # Prometheus
   prometheus:
+    restart: unless-stopped
     image: prom/prometheus:v2.51.0
     container_name: prometheus
     ports:
       - "9090:9090"
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/alerts.yml:/etc/prometheus/alerts.yml
     deploy:
       resources:
         limits:
@@ -326,6 +340,7 @@ services:
 
   # Grafana
   grafana:
+    restart: unless-stopped
     image: grafana/grafana:10.4.0
     container_name: grafana
     ports:
@@ -349,6 +364,7 @@ services:
 
   # Airflow
   airflow:
+    restart: unless-stopped
     build:
       context: ./airflow
       dockerfile: Dockerfile
@@ -369,11 +385,11 @@ services:
       - airflow-data:/opt/airflow
       - /var/run/docker.sock:/var/run/docker.sock
       - ./flink_jobs:/opt/airflow/flink_jobs
-    command: bash -c "airflow db init && airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com 2>/dev/null || true && airflow scheduler & airflow webserver --port 8080"
+    command: bash -c "airflow db migrate && airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com 2>/dev/null || true && airflow scheduler & airflow webserver --port 8080"
     deploy:
       resources:
         limits:
-          memory: 2G
+          memory: 4G
     depends_on:
       - clickhouse
       - minio
@@ -381,6 +397,7 @@ services:
 
   # Nessie Catalog (Iceberg)
   nessie:
+    restart: unless-stopped
     image: ghcr.io/projectnessie/nessie:latest
     container_name: nessie
     hostname: nessie

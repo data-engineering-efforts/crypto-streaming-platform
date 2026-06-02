@@ -14,5 +14,4 @@ def run_maintenance(**context):
     logger.info(
         "Iceberg maintenance skipped: PyIceberg REST catalog "
         "incompatible with Flink NessieCatalog. "
-        "See README for production solution."
     )

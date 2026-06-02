@@ -155,7 +155,7 @@ def main():
             database=CLICKHOUSE_DB,
             user=CLICKHOUSE_USER,
             password=CLICKHOUSE_PASSWORD,
-            batch_size=5, # we can buffer a few records to improve throughput
+            batch_size=1, # we can buffer a few records to improve throughput
             flush_interval_sec=1.0
         )
     )

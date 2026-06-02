@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pyflink.common.typeinfo import Types
 from pyflink.datastream import StreamExecutionEnvironment
 from pyflink.table import StreamTableEnvironment
@@ -42,7 +42,7 @@ class VwapClickHouseSink(ClickHouseSink):
             value[4], # total_volume
             value[5], # trade_count
             value[6], # interval_label
-            int(window_start.timestamp()), # version
+            int(window_start.replace(tzinfo=timezone.utc).timestamp()), # version
         )
 
 def main():

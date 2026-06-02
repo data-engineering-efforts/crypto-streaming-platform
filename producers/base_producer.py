@@ -16,6 +16,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+SYMBOL_PARTITIONS = {"BTCUSDT": 0, "ETHUSDT": 1, "SOLUSDT": 2}
+
 
 class BaseProducer(ABC):
     """
@@ -115,6 +117,7 @@ class BaseProducer(ABC):
                 topic=self.topic,
                 key=key.encode("utf-8"),
                 value=serialized_value,
+                partition=SYMBOL_PARTITIONS.get(key, -1),
                 on_delivery=self.delivery_callback
             )
         except Exception as e:

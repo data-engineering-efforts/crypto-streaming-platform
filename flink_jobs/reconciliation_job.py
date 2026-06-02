@@ -23,12 +23,13 @@ from shared.config import (
 
 def get_time_window():
     """
-    Get the last completed hour window for reconciliation.
-    Example: if now is 17:35, returns (16:00, 17:00)
+    Get reconciliation window covering the last 2 hours up to now.
+    Matches the window used in check_iceberg_data.py.
+    Example: if now is 20:45, returns (18:00, 20:45)
     """
     now = datetime.now(timezone.utc)
-    window_end = now.replace(minute=0, second=0, microsecond=0)
-    window_start = window_end - timedelta(hours=1)
+    window_end = now
+    window_start = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=2)
     return window_start, window_end
 
 def compute_batch_vwap(t_env, window_start: datetime, window_end: datetime) -> dict:
@@ -119,11 +120,6 @@ def save_results(results: list):
     logger.info(f"Saved {len(results)} recon results to ClickHouse")
 
 def main():
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(name)s] %(levelname)s: %(message)s"
-    )
-
     t_env = TableEnvironment.create(
         EnvironmentSettings.in_batch_mode()
     )

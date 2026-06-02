@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pyflink.common.typeinfo import Types
 from pyflink.datastream import StreamExecutionEnvironment
 from pyflink.table import StreamTableEnvironment
@@ -42,7 +42,7 @@ class ArbitrageClickHouseSink(ClickHouseSink):
             value[4],  # spread_pct
             value[5],  # direction
             event_time,  # event_time
-            int(event_time.timestamp()),  # version
+            int(event_time.replace(tzinfo=timezone.utc).timestamp()),  # version
         )
 
 
@@ -140,8 +140,8 @@ def main():
             database=CLICKHOUSE_DB,
             user=CLICKHOUSE_USER,
             password=CLICKHOUSE_PASSWORD,
-            batch_size=10,
-            flush_interval_sec=1.0
+            batch_size=500,
+            flush_interval_sec=5.0
         )
     )
 

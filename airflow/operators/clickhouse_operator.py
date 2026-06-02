@@ -3,9 +3,9 @@ import clickhouse_driver
 
 logger = logging.getLogger(__name__)
 
-CLICKHOUSE_HOST     = "clickhouse"
-CLICKHOUSE_PORT     = 9000
-CLICKHOUSE_USER     = "default"
+CLICKHOUSE_HOST = "clickhouse"
+CLICKHOUSE_PORT = 9000
+CLICKHOUSE_USER = "default"
 CLICKHOUSE_PASSWORD = ""
 
 def get_client() -> clickhouse_driver.Client:
@@ -23,9 +23,8 @@ def get_recon_results(window_start) -> list:
     rows = client.execute("""
         SELECT symbol, streaming_vwap, batch_vwap, diff_pct, status
         FROM recon_results
-        WHERE window_start >= %(start)s
-          AND run_time >= now() - INTERVAL 10 MINUTE
+        WHERE run_time >= now() - INTERVAL 10 MINUTE
         ORDER BY diff_pct DESC
-    """, {"start": window_start})
+    """)
     client.disconnect()
     return rows

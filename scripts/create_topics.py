@@ -62,41 +62,6 @@ def main():
             }
         ),
 
-        NewTopic(
-            topic="recon-status",
-            num_partitions=1, # one result per hour, single partition is enough
-            replication_factor=REPLICATION_FACTOR,
-            config={
-                "min.insync.replicas": MIN_ISR,
-                "retention.ms": "604800000", # 7d audit trail for reconciliation history
-                "compression.type": "zstd", # low volume, long retention, save disk space
-                "cleanup.policy": "delete"
-            }
-        ),
-
-        NewTopic(
-            topic="recon-alerts",
-            num_partitions=1, # fired only on mismatch, single partition is enough
-            replication_factor=REPLICATION_FACTOR,
-            config={
-                "min.insync.replicas": MIN_ISR,
-                "retention.ms": "604800000", # 7d audit trail for mismatch history
-                "compression.type": "zstd", # low volume, long retention, save disk space
-                "cleanup.policy": "delete"
-            }
-        ),
-
-        NewTopic(
-            topic="recon-corrections",
-            num_partitions=3, # 3 partitions for 3 symbols: BTC, ETH, SOL
-            replication_factor=REPLICATION_FACTOR,
-            config={
-                "min.insync.replicas": MIN_ISR,
-                "retention.ms": "604800000", # 7d audit trail for corrections
-                "compression.type": "zstd", # low volume, long retention, save disk space
-                "cleanup.policy": "delete"
-            }
-        )
     ]
 
     create_topics(admin, topics)

@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pyflink.common.typeinfo import Types
 from pyflink.datastream import StreamExecutionEnvironment
 from pyflink.table import StreamTableEnvironment
@@ -40,7 +40,7 @@ class DoubleBottomClickHouseSink(ClickHouseSink):
             value[3], # peak_price
             value[4], # breakout_price
             confirmed_at, # confirmed_at = время BREAK
-            int(confirmed_at.timestamp()), # version = unix timestamp BREAK
+            int(confirmed_at.replace(tzinfo=timezone.utc).timestamp()), # version = unix timestamp BREAK
         )
 
 def main():
@@ -124,7 +124,7 @@ def main():
             user=CLICKHOUSE_USER,
             password=CLICKHOUSE_PASSWORD,
             batch_size=1, # very rare signals, so we want to flush immediately
-            flush_interval_sec=0.0
+            flush_interval_sec=10.0
         )
     )
 

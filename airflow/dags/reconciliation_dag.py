@@ -43,11 +43,11 @@ def run_reconciliation(**context):
     )
 
 def check_alerts(**context):
-    """Check recon_results for ALERTs."""
+    # intentional: liveness check against wall clock, not a backfillable window
     now = datetime.now(timezone.utc)
     window_start = now.replace(
         minute=0, second=0, microsecond=0
-    ) - timedelta(hours=1)
+    ) - timedelta(hours=2) # matches the window used in check_iceberg_data.py and reconciliation_job.py
 
     rows = get_recon_results(window_start)
     alerts = [r for r in rows if r[4] == "ALERT"]

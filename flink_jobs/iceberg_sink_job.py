@@ -11,10 +11,11 @@ def main():
     env = StreamExecutionEnvironment.get_execution_environment()
     env.set_parallelism(1)
     
-    env.enable_checkpointing(300000)  # Trigger checkpoint every 5 minutes
+    env.enable_checkpointing(400000)  # Trigger checkpoint every 5 minutes
+    #env.enable_checkpointing(180000)
     ch_config = env.get_checkpoint_config()
     ch_config.set_checkpointing_mode(CheckpointingMode.EXACTLY_ONCE)
-    ch_config.set_checkpoint_timeout(120000)        # 2 minutes timeout
+    ch_config.set_checkpoint_timeout(120000) # 2 minutes timeout
     ch_config.set_min_pause_between_checkpoints(60000) # 1 minute pause between checkpoints
     ch_config.set_tolerable_checkpoint_failure_number(2)
     ch_config.set_max_concurrent_checkpoints(1)

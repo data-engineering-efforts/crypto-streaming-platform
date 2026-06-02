@@ -16,7 +16,7 @@ FLINK_CONTAINERS = [
     "flink-jobmanager",
     "flink-taskmanager-1",
     "flink-taskmanager-2",
-    "flink-taskmanager-3",
+    #"flink-taskmanager-3",
 ]
 
 JOBS = [
@@ -212,14 +212,14 @@ def main():
         logger.error(f"Critical error copying shared modules: {e}")
         return
 
-    # configure ClickHouse to allow remote connections
-    try:
-        configure_clickhouse()
-    except Exception as e:
-        logger.error(f"Critical: ClickHouse configuration failed: {e}")
-        return
+    # # configure ClickHouse to allow remote connections
+    # try:
+    #     configure_clickhouse()
+    # except Exception as e:
+    #     logger.error(f"Critical: ClickHouse configuration failed: {e}")
+    #     return
     
-   # initialize Iceberg tables
+    # initialize Iceberg tables
     try:
         init_iceberg()
     except Exception as e:

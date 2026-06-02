@@ -9,3 +9,6 @@ websockets==12.0
 
 # Utilities
 python-dotenv==1.0.0
+
+pytest==8.2.0
+fastavro==1.9.4

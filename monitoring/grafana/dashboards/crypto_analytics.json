@@ -61,7 +61,7 @@
     {
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${DS_GRAFANA-CLICKHOUSE-DATASOURCE}"
+        "uid": "clickhouse-datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -116,7 +116,7 @@
         {
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${DS_GRAFANA-CLICKHOUSE-DATASOURCE}"
+            "uid": "clickhouse-datasource"
           },
           "editorType": "sql",
           "format": 1,
@@ -132,7 +132,7 @@
           },
           "pluginVersion": "4.17.0",
           "queryType": "table",
-          "rawSql": "SELECT\n    event_time,\n    symbol,\n    price,\n    quantity,\n    trade_value,\n    exchange,\n    side\nFROM whale_alerts\nWHERE event_time >= $__fromTime\n  AND event_time <= $__toTime\nORDER BY event_time DESC\nLIMIT 100",
+          "rawSql": "SELECT\n    event_time,\n    symbol,\n    price,\n    quantity,\n    trade_value,\n    exchange,\n    side\nFROM whale_alerts FINAL\nWHERE event_time >= $__fromTime\n  AND event_time <= $__toTime\nORDER BY event_time DESC\nLIMIT 100",
           "refId": "A"
         }
       ],
@@ -142,7 +142,7 @@
     {
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${DS_GRAFANA-CLICKHOUSE-DATASOURCE}"
+        "uid": "clickhouse-datasource"
       },
       "fieldConfig": {
         "defaults": {
@@ -219,118 +219,137 @@
       },
       "targets": [
         {
-          "builderOptions": {
-            "aggregates": [],
-            "columns": [
-              {
-                "alias": "symbol",
-                "custom": false,
-                "name": "symbol",
-                "type": "String"
-              },
-              {
-                "alias": "vwap",
-                "custom": false,
-                "name": "vwap",
-                "type": "Float64"
-              },
-              {
-                "alias": "window_start",
-                "hint": "time",
-                "name": "window_start",
-                "type": "DateTime"
-              }
-            ],
-            "database": "default",
-            "filters": [
-              {
-                "condition": "AND",
-                "filterType": "custom",
-                "hint": "time",
-                "key": "",
-                "operator": "WITH IN DASHBOARD TIME RANGE",
-                "type": "datetime"
-              }
-            ],
-            "groupBy": [],
-            "limit": 1000,
-            "meta": {},
-            "mode": "aggregate",
-            "orderBy": [
-              {
-                "default": true,
-                "dir": "ASC",
-                "hint": "time",
-                "name": ""
-              }
-            ],
-            "queryType": "timeseries",
-            "table": "vwap_aggregations"
-          },
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${DS_GRAFANA-CLICKHOUSE-DATASOURCE}"
+            "uid": "clickhouse-datasource"
           },
           "editorType": "sql",
           "format": 0,
-          "meta": {
-            "builderOptions": {
-              "aggregates": [],
-              "columns": [
-                {
-                  "alias": "symbol",
-                  "custom": false,
-                  "name": "symbol",
-                  "type": "String"
-                },
-                {
-                  "alias": "vwap",
-                  "custom": false,
-                  "name": "vwap",
-                  "type": "Float64"
-                },
-                {
-                  "alias": "window_start",
-                  "hint": "time",
-                  "name": "window_start",
-                  "type": "DateTime"
-                }
-              ],
-              "database": "default",
-              "filters": [
-                {
-                  "condition": "AND",
-                  "filterType": "custom",
-                  "hint": "time",
-                  "key": "",
-                  "operator": "WITH IN DASHBOARD TIME RANGE",
-                  "type": "datetime"
-                }
-              ],
-              "groupBy": [],
-              "limit": 1000,
-              "meta": {},
-              "mode": "aggregate",
-              "orderBy": [
-                {
-                  "default": true,
-                  "dir": "ASC",
-                  "hint": "time",
-                  "name": ""
-                }
-              ],
-              "queryType": "timeseries",
-              "table": "vwap_aggregations"
-            }
-          },
           "pluginVersion": "4.17.0",
           "queryType": "timeseries",
-          "rawSql": "SELECT\n    window_start AS time,\n    concat(symbol, ' VWAP') AS metric,\n    vwap\nFROM vwap_aggregations\nWHERE window_start >= $__fromTime\n  AND window_start <= $__toTime\nORDER BY time ASC",
+          "rawSql": "SELECT\n    window_start AS time,\n    concat(symbol, ' VWAP') AS metric,\n    vwap\nFROM vwap_aggregations FINAL\nWHERE window_start >= $__fromTime\n  AND window_start <= $__toTime\nORDER BY time ASC",
           "refId": "A"
         }
       ],
       "title": "VWAP Price (Time Series)",
       "type": "timeseries"
+    },
+    {
+      "id": 3,
+      "type": "table",
+      "title": "Reconciliation Results (Latest)",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse-datasource"
+      },
+      "options": {
+        "sortBy": [
+          {
+            "displayName": "diff_pct",
+            "desc": true
+          }
+        ],
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "diff_pct"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 4
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 0.1
+                    },
+                    {
+                      "color": "red",
+                      "value": 0.5
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "status"
+            },
+            "properties": [
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "OK": {
+                        "color": "green",
+                        "text": "OK"
+                      },
+                      "WARN": {
+                        "color": "yellow",
+                        "text": "WARN"
+                      },
+                      "FAIL": {
+                        "color": "red",
+                        "text": "FAIL"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "clickhouse-datasource"
+          },
+          "rawSql": "SELECT\n    symbol,\n    streaming_vwap,\n    batch_vwap,\n    diff_pct,\n    status,\n    run_time\nFROM recon_results FINAL\nWHERE (symbol, run_time) IN (\n    SELECT symbol, max(run_time)\n    FROM recon_results FINAL\n    GROUP BY symbol\n)\nORDER BY symbol",
+          "refId": "A",
+          "format": 1
+        }
+      ]
     }
   ],
   "schemaVersion": 39,
