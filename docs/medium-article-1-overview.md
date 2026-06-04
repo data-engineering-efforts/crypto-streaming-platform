@@ -86,7 +86,17 @@ Flink is the heart of the platform. It reads the raw trades from Kafka and runs 
 - **VWAP Aggregation** - the volume weighted average price per symbol, in time windows.
 - **Whale Detector** - flags very large single trades (for example, a single trade of 5+ BTC).
 - **Arbitrage Monitor** - finds price differences for the same asset between Binance and Coinbase.
-- **Double Bottom CEP** - detects a classic chart pattern using Flink SQL `MATCH_RECOGNIZE`.
+- **Double Bottom CEP** - detects  "double bottom" chart pattern.
+  This is a W-shaped price movement that traders read as a possible trend
+  reversal: the price drops to a low, bounces up, drops again to about the
+  same low, and then breaks above the bounce. Spotting it is not a single
+  condition - it is a sequence of events in the right order over time
+  (drop → bottom → rise → peak → drop → bottom → breakout). I detect it with
+  Flink SQL's `MATCH_RECOGNIZE`, which works like a regular expression over
+  the stream of prices. This is Complex Event Processing: finding
+  patterns across a sequence of events, not filtering single ones. `MATCH_RECOGNIZE`.
+  (In practice this pattern is unreliable on raw tick data. I included it
+  to demonstrate CEP, not as a real trading strategy.)
 - **Iceberg Sink** - writes the raw trades to the data lake.
 
 **Why Flink?** Because these jobs need real streaming features: event-time windows, watermarks, stateful joins, and complex event processing. Flink does all of this natively. The arbitrage job, for example, joins two live streams, the double-bottom job matches a sequence of price moves over time. You cannot do this cleanly with simple consumers.
