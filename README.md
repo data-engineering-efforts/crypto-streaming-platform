@@ -125,6 +125,14 @@ Grafana · Docker Compose.
 - About **2 GB of free disk** for the Docker images. The first start downloads them,
   which can take a while.
 
+## Tested environment
+
+I developed and tested this project on a MacBook Pro (M1 Pro, 32 GB RAM).
+
+I have not tested it on Windows, so I can't give reliable advice there, 
+you may run into issues, especially with the `Makefile` and the host-side
+commands which assume a Unix-like shell.
+
 ## Quick start
 
 ```bash
