@@ -12,7 +12,7 @@ stateful processing, a lakehouse, batch vs streaming reconciliation, and monitor
 ## Articles
 
 - [Architecture overview](https://medium.com/@dabahian.a1/494eb283fe27) — what the platform is and why each piece is there.
-- [Five production bugs (deep-dive)](https://medium.com/@dabahian.a1/3670f41f2139) — the real problems I debugged and fixed.
+- [Four production bugs (deep-dive)](https://medium.com/@dabahian.a1/3670f41f2139) — the real problems I debugged and fixed.
 
 ## Dependency on external data contracts
 
@@ -49,7 +49,7 @@ message formats and do not yet implement full schemaevolution handling.
   - **VWAP** – volume-weighted average price per symbol, in time windows.
   - **Whale Detector** – flags very large single trades.
   - **Arbitrage Monitor** – finds price gaps for the same asset between the two exchanges.
-  - **Double Bottom CEP** – detects a classic chart pattern using Flink SQL `MATCH_RECOGNIZE`.
+  - **Double Bottom CEP** – detects “double bottom” chart pattern. This is a W-shaped price movement that traders read as a possible trend reversal, the price drops to a low, bounces up, drops again to about the same low, and then breaks above the bounce. Spotting it is not a single condition — it is a sequence of events in the right order over time (drop → bottom → rise → peak → drop → bottom → breakout). I detect it with Flink SQL’s MATCH_RECOGNIZE which works like a regular expression over the stream of prices. This is Complex Event Processing - finding patterns across a sequence of events not filtering single ones. In practice this pattern is unreliable on raw tick data. I included it to demonstrate CEP, not as a real trading strategy.
   - **Iceberg Sink** – writes raw trades to the data lake (MinIO + Iceberg + Nessie).
 - **Storage**:
   - **ClickHouse** holds the streaming results (fast OLAP queries for dashboards).
