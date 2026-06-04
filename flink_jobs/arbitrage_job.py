@@ -62,7 +62,7 @@ def main():
             price DECIMAL(18, 8),
             trade_time BIGINT,
             trade_time_ts AS TO_TIMESTAMP_LTZ(trade_time, 3),
-            WATERMARK FOR trade_time_ts AS trade_time_ts - INTERVAL '10' SECOND
+            WATERMARK FOR trade_time_ts AS trade_time_ts - INTERVAL '5' SECOND
         ) WITH (
             'connector' = 'kafka',
             'topic' = 'raw-binance-trades',
@@ -81,7 +81,7 @@ def main():
             price DECIMAL(18, 8),
             event_time BIGINT,
             event_time_ts AS TO_TIMESTAMP_LTZ(event_time, 3),
-            WATERMARK FOR event_time_ts AS event_time_ts - INTERVAL '10' SECOND
+            WATERMARK FOR event_time_ts AS event_time_ts - INTERVAL '5' SECOND
         ) WITH (
             'connector' = 'kafka',
             'topic' = 'raw-coinbase-match',
@@ -93,32 +93,42 @@ def main():
         )
     """)
 
-    # Interval JOIN: join events within +/-10 seconds
-    # Only emit when spread > 0.1%
+    t_env.get_config().set("table.exec.state.ttl", "1min")
+
     result_table = t_env.sql_query("""
-        SELECT
-            b.symbol,
-            CAST(b.price AS DOUBLE) AS binance_price,
-            CAST(c.price AS DOUBLE) AS coinbase_price,
-            ABS(CAST(b.price AS DOUBLE) - CAST(c.price AS DOUBLE)) AS spread,
-            (ABS(CAST(b.price AS DOUBLE) - CAST(c.price AS DOUBLE))
-                / CAST(b.price AS DOUBLE)) * 100 AS spread_pct,
-            CASE
-                WHEN CAST(b.price AS DOUBLE) > CAST(c.price AS DOUBLE)
-                THEN 'BUY_COINBASE_SELL_BINANCE'
-                ELSE 'BUY_BINANCE_SELL_COINBASE'
-            END AS direction,
-            CAST(b.trade_time_ts AS STRING) AS event_time
-        FROM binance_trades_arb b
-        JOIN coinbase_trades_arb c
-            ON b.symbol = REPLACE(c.product_id, '-USD', 'USDT')
-            AND c.event_time_ts BETWEEN
-                b.trade_time_ts - INTERVAL '10' SECOND
-                AND b.trade_time_ts + INTERVAL '10' SECOND
-        WHERE
-            (ABS(CAST(b.price AS DOUBLE) - CAST(c.price AS DOUBLE))
-                / CAST(b.price AS DOUBLE)) * 100 > 0.1
-    """)
+            WITH binance_1s AS (
+                SELECT symbol, window_start,
+                    LAST_VALUE(price) AS price
+                FROM TABLE(TUMBLE(TABLE binance_trades_arb, DESCRIPTOR(trade_time_ts), INTERVAL '5' SECOND))
+                GROUP BY symbol, window_start, window_end
+            ),
+            coinbase_1s AS (
+                SELECT REPLACE(product_id, '-USD', 'USDT') AS symbol, window_start,
+                    LAST_VALUE(price) AS price
+                FROM TABLE(TUMBLE(TABLE coinbase_trades_arb, DESCRIPTOR(event_time_ts), INTERVAL '5' SECOND))
+                GROUP BY REPLACE(product_id, '-USD', 'USDT'), window_start, window_end
+            )
+            SELECT
+                b.symbol,
+                CAST(b.price AS DOUBLE) AS binance_price,
+                CAST(c.price AS DOUBLE) AS coinbase_price,
+                ABS(CAST(b.price AS DOUBLE) - CAST(c.price AS DOUBLE)) AS spread,
+                (ABS(CAST(b.price AS DOUBLE) - CAST(c.price AS DOUBLE))
+                    / CAST(b.price AS DOUBLE)) * 100 AS spread_pct,
+                CASE
+                    WHEN CAST(b.price AS DOUBLE) > CAST(c.price AS DOUBLE)
+                    THEN 'BUY_COINBASE_SELL_BINANCE'
+                    ELSE 'BUY_BINANCE_SELL_COINBASE'
+                END AS direction,
+                CAST(b.window_start AS STRING) AS event_time
+            FROM binance_1s b
+            JOIN coinbase_1s c
+                ON b.symbol = c.symbol
+                AND b.window_start = c.window_start
+            WHERE 
+                (ABS(CAST(b.price AS DOUBLE) - CAST(c.price AS DOUBLE)) 
+                    / CAST(b.price AS DOUBLE)) * 100 > 0.1
+        """)
 
     result_stream = t_env.to_append_stream(
         result_table,

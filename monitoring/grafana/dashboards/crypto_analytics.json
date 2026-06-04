@@ -120,16 +120,6 @@
           },
           "editorType": "sql",
           "format": 1,
-          "meta": {
-            "builderOptions": {
-              "columns": [],
-              "database": "",
-              "limit": 1000,
-              "mode": "list",
-              "queryType": "table",
-              "table": ""
-            }
-          },
           "pluginVersion": "4.17.0",
           "queryType": "table",
           "rawSql": "SELECT\n    event_time,\n    symbol,\n    price,\n    quantity,\n    trade_value,\n    exchange,\n    side\nFROM whale_alerts FINAL\nWHERE event_time >= $__fromTime\n  AND event_time <= $__toTime\nORDER BY event_time DESC\nLIMIT 100",
@@ -350,6 +340,179 @@
           "format": 1
         }
       ]
+    },
+    {
+      "id": 4,
+      "type": "table",
+      "title": "Arbitrage Signals (Latest)",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse-datasource"
+      },
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "showHeader": true
+      },
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "spread_pct"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 4
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 0.2
+                    },
+                    {
+                      "color": "red",
+                      "value": 0.5
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.displayMode",
+                "value": "color-background"
+              }
+            ]
+          }
+        ]
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "clickhouse-datasource"
+          },
+          "editorType": "sql",
+          "format": 1,
+          "pluginVersion": "4.17.0",
+          "queryType": "table",
+          "rawSql": "SELECT\n    event_time,\n    symbol,\n    binance_price,\n    coinbase_price,\n    spread_pct,\n    direction\nFROM arbitrage_signals FINAL\nWHERE event_time >= $__fromTime\n  AND event_time <= $__toTime\nORDER BY event_time DESC\nLIMIT 100",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Arbitrage Spread % (Time Series)",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse-datasource"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "insertNulls": false,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "unit": "percent",
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "clickhouse-datasource"
+          },
+          "editorType": "sql",
+          "format": 0,
+          "pluginVersion": "4.17.0",
+          "queryType": "timeseries",
+          "rawSql": "SELECT\n    event_time AS time,\n    concat(symbol, ' spread%') AS metric,\n    spread_pct\nFROM arbitrage_signals FINAL\nWHERE event_time >= $__fromTime\n  AND event_time <= $__toTime\nORDER BY time ASC",
+          "refId": "A"
+        }
+      ]
     }
   ],
   "schemaVersion": 39,
@@ -365,6 +528,6 @@
   "timezone": "browser",
   "title": "Crypto Streaming Platform - Analytics",
   "uid": "ffnfvghkl55hce",
-  "version": 5,
+  "version": 6,
   "weekStart": ""
 }

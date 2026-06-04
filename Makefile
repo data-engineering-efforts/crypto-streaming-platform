@@ -40,7 +40,7 @@ infra: ## start docker services and wait until healthy
 # internal: block until a container reports healthy (max ~90s)
 _wait:
 	@printf "  waiting for %s " "$(SVC)"; \
-	for i in $$(seq 1 90); do \
+	for i in $$(seq 1 45); do \
 		status=$$(docker inspect -f '{{.State.Health.Status}}' $(SVC) 2>/dev/null || echo "missing"); \
 		if [ "$$status" = "healthy" ]; then echo " OK"; exit 0; fi; \
 		printf "."; sleep 2; \
