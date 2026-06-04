@@ -9,6 +9,11 @@ correct.
 This is a portfolio project built to practice real data engineering: streaming,
 stateful processing, a lakehouse, batch vs streaming reconciliation, and monitoring.
 
+## Articles
+
+- [Architecture overview](https://medium.com/@dabahian.a1/494eb283fe27) — what the platform is and why each piece is there.
+- [Five production bugs (deep-dive)](https://medium.com/@dabahian.a1/3670f41f2139) — the real problems I debugged and fixed.
+
 ## Dependency on external data contracts
 
 This project depends on the message format of the Binance and Coinbase
