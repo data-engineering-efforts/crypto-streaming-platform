@@ -50,7 +50,7 @@ topic needs:
 - **3 partitions** for the trade topics - one logical partition per symbol
   (BTC, ETH, SOL), so the work can be spread across consumers.
 - **lz4 compression** for the trade topics, because they are latency sensitive
-  and lz4 is fast; **zstd** for the low-volume dead-letter topic, where saving
+  and lz4 is fast, **zstd** for the low-volume dead-letter topic, where saving
   disk matters more than speed.
 - **Retention tuned per topic** - 24h for Binance (enough to land in the lake),
   6h for Coinbase (enough for the arbitrage job to replay), 7 days for the
