@@ -166,8 +166,8 @@ I wrote these down on purpose. Knowing where the limits are is part of understan
 
 This was the overview. In the **second article** I go deep into the real problems I hit and fixed: a timezone bug that silently broke deduplication, a Flink Direct Memory crash, a health check that lied about a healthy server, a producer that stopped without crashing, and an interval join that exploded under load and how I cut its CPU usage from 100% to 1%.
 
-👉 **The code is on GitHub:** [github.com/data-engineering-efforts/crypto-streaming-platform](https://github.com/data-engineering-efforts/crypto-streaming-platform)
+**The code is on GitHub:** [github.com/data-engineering-efforts/crypto-streaming-platform](https://github.com/data-engineering-efforts/crypto-streaming-platform)
 
-👉 **Read the technical deep-dive:** *(link to article 2)*
+**Read the technical deep-dive:** *(link to article 2)*
 
 If you found this useful, I'd be glad to hear your thoughts.
