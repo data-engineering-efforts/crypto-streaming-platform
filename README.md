@@ -86,12 +86,15 @@ Monitoring:  Kafka Exporter + ClickHouse  ──(scrape)──>  Prometheus  ─
 ![Grafana dashboard](docs/grafana-dashboard.png)
 
 Whale Alerts
+
 ![Whale Alerts](docs/whale_alerts.png)
 
 Reconciliation Results
+
 ![Reconciliation Results](docs/reconciliation_results.png)
 
 Arbitrage Signals
+
 ![Arbitrage Signals](docs/arbitrage-signals.png)
 
 ### Flink — running jobs
@@ -102,9 +105,11 @@ Raw Binance Trades
 ![Raw Binance Trades](docs/raw-binance-trades.png)
 
 Raw Coinbase Trades
+
 ![Raw Coinbase Match](docs/raw-coinbase-match.png)
 
 Example of message
+
 ![Example of message](docs/binance-message.png)
 
 ### Prometheus — targets
@@ -115,6 +120,27 @@ Example of message
 Kafka (KRaft, 3 brokers) · Schema Registry (Avro) · Apache Flink (PyFlink) ·
 ClickHouse · MinIO · Apache Iceberg · Nessie · Apache Airflow · Prometheus ·
 Grafana · Docker Compose.
+
+### Iceberg table maintenance (not implemented)
+
+Iceberg tables need periodic maintenance over time:
+- compaction — merge many small files into fewer
+  large ones for faster reads.
+- snapshot cleanup — drop old snapshots from the
+  table history.
+- orphan file removal  — delete files left in
+  storage that no snapshot references, e.g. after a failed write between
+  a Flink checkpoint and the snapshot commit.
+
+In this project the maintenance task is a placeholder. PyIceberg could
+not run these procedures against the tables written by Flink's Nessie
+catalog, due to a metadata format mismatch between the two.
+
+The production solution is a scheduled Spark job (e.g. on AWS Glue or
+Databricks) running `rewrite_data_files`, `expire_snapshots`, and
+`remove_orphan_files`. This is left as a known gap rather than
+implemented since it would require adding Spark to a single machine
+setup.
 
 ## Requirements
 
