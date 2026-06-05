@@ -20,3 +20,5 @@ flink-checkpoints/
 *.pem
 config/secrets.yml
 
+.DS_Store
+
