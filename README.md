@@ -7,7 +7,7 @@ to an Iceberg data lake so a batch job can later check that the streaming number
 correct.
 
 This is a portfolio project built to practice real data engineering: streaming,
-stateful processing, a lakehouse, batch vs streaming reconciliation, and monitoring.
+stateful processing, a lakehouse, batch vs streaming reconciliation and monitoring.
 
 ## Articles
 
@@ -18,14 +18,14 @@ stateful processing, a lakehouse, batch vs streaming reconciliation, and monitor
 
 This project depends on the message format of the Binance and Coinbase
 WebSocket APIs. The producers parse specific fields (price, quantity,
-timestamp, symbol) from a fixed message structure, and the Avro schemas
+timestamp, symbol) from a fixed message structure and the Avro schemas
 in the Schema Registry describe that structure.
 
 If either exchange changes its data contract — renames a field, changes a
 type, or restructures the message — the producers will fail to parse new
-messages, and the pipeline will stop receiving valid data. This is an
+messages and the pipeline will stop receiving valid data. This is an
 inherent risk of consuming third-party APIs: the upstream format is owned
-by the exchange, not by this project.
+by the exchange not by this project.
 
 In production this would be handled by:
 
@@ -49,7 +49,7 @@ message formats and do not yet implement full schemaevolution handling.
   - **VWAP** – volume-weighted average price per symbol, in time windows.
   - **Whale Detector** – flags very large single trades.
   - **Arbitrage Monitor** – finds price gaps for the same asset between the two exchanges.
-  - **Double Bottom CEP** – detects “double bottom” chart pattern. This is a W-shaped price movement that traders read as a possible trend reversal, the price drops to a low, bounces up, drops again to about the same low, and then breaks above the bounce. Spotting it is not a single condition — it is a sequence of events in the right order over time (drop → bottom → rise → peak → drop → bottom → breakout). I detect it with Flink SQL’s MATCH_RECOGNIZE which works like a regular expression over the stream of prices. This is Complex Event Processing - finding patterns across a sequence of events not filtering single ones. In practice this pattern is unreliable on raw tick data. I included it to demonstrate CEP, not as a real trading strategy.
+  - **Double Bottom CEP** – detects “double bottom” chart pattern. This is a W-shaped price movement that traders read as a possible trend reversal, the price drops to a low, bounces up, drops again to about the same low and then breaks above the bounce. Spotting it is not a single condition, it is a sequence of events in the right order over time (drop → bottom → rise → peak → drop → bottom → breakout). I detect it with Flink SQL’s MATCH_RECOGNIZE which works like a regular expression over the stream of prices. This is Complex Event Processing, finding patterns across a sequence of events not filtering single ones. In practice this pattern is unreliable on raw tick data. I included it to demonstrate CEP, not as a real trading strategy.
   - **Iceberg Sink** – writes raw trades to the data lake (MinIO + Iceberg + Nessie).
 - **Storage**:
   - **ClickHouse** holds the streaming results (fast OLAP queries for dashboards).
@@ -145,7 +145,7 @@ setup.
 ## Requirements
 
 - **Docker Desktop** with at least **16 GB of memory** assigned
-  (Settings -> Resources -> Memory). The stack is heavy: three Flink TaskManagers
+  (Settings -> Resources -> Memory). The stack is heavy: two Flink TaskManagers
   alone can use several GB. With less memory the brokers become unstable.
 - **Python 3.10+** on the host (the producers and helper scripts run outside Docker).
 - About **2 GB of free disk** for the Docker images. The first start downloads them,

@@ -16,7 +16,6 @@ FLINK_CONTAINERS = [
     "flink-jobmanager",
     "flink-taskmanager-1",
     "flink-taskmanager-2",
-    #"flink-taskmanager-3",
 ]
 
 JOBS = [
