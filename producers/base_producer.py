@@ -20,10 +20,24 @@ SYMBOL_PARTITIONS = {"BTCUSDT": 0, "ETHUSDT": 1, "SOLUSDT": 2}
 
 
 class BaseProducer(ABC):
-    """
-    Base class for all Kafka Producers in the project.
-    Handles: Schema Registry connection, Avro serialization,
-             delivery callbacks, and centralized DLQ routing.
+    """Base class for all Kafka producers in the project.
+
+    Handles the Schema Registry connection, Avro serialization,
+    delivery callbacks, and centralized DLQ routing. Subclasses implement
+    `to_dict` and `start`.
+
+    Args:
+        bootstrap_servers: Comma-separated Kafka broker addresses.
+        schema_registry_url: URL of the Confluent Schema Registry.
+        topic: Kafka topic that messages are produced to.
+        schema_str: Avro schema (JSON string) for message values.
+
+    Attributes:
+        topic: Kafka topic that messages are produced to.
+        logger: Logger named after the concrete subclass.
+        schema_registry_client: Client for the Schema Registry.
+        avro_serializer: Serializer for message values; calls `to_dict`.
+        producer: Idempotent confluent-kafka `Producer` (acks=all, lz4).
     """
 
     def __init__(
@@ -80,9 +94,15 @@ class BaseProducer(ABC):
             self.logger.info("Kafka poll loop task cancelled.")
 
     def delivery_callback(self, err, msg):
-        """
-        Triggered by poll() once the message is delivered or fails.
+        """Handles the delivery report for one produced message.
+
+        Triggered by `poll()` once the message is delivered or fails.
         Called by librdkafka with exactly two parameters: (err, msg).
+        Failed messages are routed to the DLQ.
+
+        Args:
+            err: Delivery error, or None if the message was delivered.
+            msg: The Kafka message the report refers to.
         """
         if err:
             self.logger.error(
@@ -105,8 +125,15 @@ class BaseProducer(ABC):
             )
 
     def send(self, key: str, value: object):
-        """
-        Serializes and pushes message to Kafka internal buffer.
+        """Serializes a message and pushes it to the Kafka internal buffer.
+
+        Known symbols are sent to a fixed partition (`SYMBOL_PARTITIONS`).
+        Serialization or produce errors are logged and routed to the DLQ
+        instead of being raised.
+
+        Args:
+            key: Message key (the trading symbol, e.g. "BTCUSDT").
+            value: Domain object to serialize via `to_dict` and Avro.
         """
         try:
             serialized_value = self.avro_serializer(
@@ -156,9 +183,10 @@ class BaseProducer(ABC):
             )
 
     def flush(self):
-        """
-        Blocks until all pending messages are delivered or timeout expires.
-        Call before shutdown to prevent data loss.
+        """Blocks until all pending messages are delivered or 30s pass.
+
+        Call before shutdown to prevent data loss. Logs a warning if
+        messages are still undelivered after the timeout.
         """
         self.logger.info("Flushing pending messages...")
         pending = self.producer.flush(timeout=30)
@@ -185,13 +213,22 @@ class BaseProducer(ABC):
 
     @abstractmethod
     def to_dict(self, obj, ctx) -> dict:
-        """Converts domain object to dict before Avro serialization."""
+        """Converts a domain object to a dict before Avro serialization.
+
+        Args:
+            obj: Domain object (e.g. a trade dataclass) to convert.
+            ctx: Serialization context passed by `AvroSerializer`.
+
+        Returns:
+            Dict whose keys match the fields of the Avro schema.
+        """
         pass
 
     @abstractmethod
     async def start(self):
-        """
-        Starts the main ingestion loop.
-        Must call asyncio.create_task(self._poll_loop()) at the beginning
+        """Starts the main ingestion loop.
+
+        Implementations must call `asyncio.create_task(self._poll_loop())`
+        at the beginning so delivery callbacks are processed.
         """
         pass

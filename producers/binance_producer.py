@@ -22,9 +22,21 @@ WHALE_THRESHOLDS = {
 
 @dataclass
 class BinanceTrade:
-    """
-    Represents a single trade event from Binance WebSocket.
-    Field names map directly to our Avro schema.
+    """A single trade event from the Binance WebSocket.
+
+    Field names map directly to the Avro schema.
+
+    Attributes:
+        event_type: Binance event type (always "trade").
+        event_time: Time Binance emitted the event, Unix ms.
+        symbol: Trading pair, e.g. "BTCUSDT".
+        trade_id: Binance trade ID.
+        price: Trade price.
+        quantity: Trade quantity in the base asset.
+        trade_time: Time the trade happened, Unix ms.
+        is_buyer_maker: True if the buyer was the maker (a sell-side trade).
+        ingestion_time: Time the producer received the trade, Unix ms.
+            Internal field for latency calculation.
     """
     event_type: str
     event_time: int
@@ -38,16 +50,28 @@ class BinanceTrade:
 
 
 class BinanceProducer(BaseProducer):
-    """
-    Connects to Binance WebSocket combined stream.
-    Reads trade events for BTC, ETH, SOL.
-    Serializes to Avro and produces to raw-binance-trades topic.
+    """Streams Binance trades into Kafka.
+
+    Connects to the Binance WebSocket combined stream, reads trade events
+    for BTC, ETH, SOL, serializes them to Avro and produces them to the
+    raw-binance-trades topic.
 
     Delivery guarantees:
         1. At-least-once from WebSocket perspective
         (data lost during downtime cannot be replayed)
         2. Idempotent producer prevents network level duplicates
         3. True exactly-once starts at Flink checkpointing stage
+
+    Args:
+        bootstrap_servers: Comma-separated Kafka broker addresses.
+        schema_registry_url: URL of the Confluent Schema Registry.
+
+    Attributes:
+        ws_url: Combined-stream WebSocket URL for all symbols.
+
+    Raises:
+        FileNotFoundError: If `schemas/binance_trade.avsc` is not found.
+            The path is relative, so run from the `producers/` directory.
     """
 
     def __init__(
@@ -73,9 +97,16 @@ class BinanceProducer(BaseProducer):
         )
 
     def to_dict(self, trade: BinanceTrade, ctx) -> dict:
-        """
-        Maps BinanceTrade dataclass - dict for Avro serialization.
-        Called by AvroSerializer before encoding to binary.
+        """Maps a BinanceTrade to a dict for Avro serialization.
+
+        Called by `AvroSerializer` before encoding to binary.
+
+        Args:
+            trade: Parsed Binance trade.
+            ctx: Serialization context passed by `AvroSerializer`.
+
+        Returns:
+            Dict with exactly the fields of the binance_trade Avro schema.
         """
         return {
             "event_type": trade.event_type,
@@ -174,8 +205,11 @@ class BinanceProducer(BaseProducer):
             )
 
     async def start(self):
-        """
-        Main ingestion loop with exponential backoff reconnection.
+        """Runs the main ingestion loop with exponential backoff reconnection.
+
+        Starts the background Kafka poll loop, then reads trades from the
+        WebSocket forever. On any connection error it waits and reconnects,
+        doubling the delay from 1s up to 60s. Runs until cancelled.
         """
         # _poll_loop() runs as background task for delivery callbacks and do not block the main WebSocket loop
         asyncio.create_task(self._poll_loop())
