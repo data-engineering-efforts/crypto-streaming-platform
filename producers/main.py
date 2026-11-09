@@ -28,6 +28,15 @@ SCHEMA_REGISTRY_URL = os.getenv(
 )
 
 async def main():
+    """Runs the Binance and Coinbase producers concurrently.
+
+    Reads Kafka and Schema Registry addresses from the project `.env`
+    (with localhost defaults). Both producers are flushed on shutdown.
+
+    Raises:
+        asyncio.CancelledError: Re-raised after flushing when the tasks
+            are cancelled (e.g. on Ctrl-C).
+    """
     binance = BinanceProducer(
         bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
         schema_registry_url=SCHEMA_REGISTRY_URL,

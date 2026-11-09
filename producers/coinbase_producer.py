@@ -23,9 +23,19 @@ WHALE_THRESHOLDS = {
 
 @dataclass
 class CoinbaseTrade:
-    """
-    Represents a single trade event from Coinbase WebSocket.
-    Field names map directly to our Avro schema.
+    """A single trade event from the Coinbase WebSocket.
+
+    Field names map directly to the Avro schema.
+
+    Attributes:
+        trade_id: Coinbase trade ID.
+        product_id: Product as returned by Coinbase, e.g. "BTC-USD".
+        price: Trade price.
+        size: Trade quantity in the base asset.
+        side: "BUY" or "SELL".
+        event_time: Time the trade happened, Unix ms.
+        ingestion_time: Time the producer received the trade, Unix ms.
+            Internal field for latency calculation.
     """
     trade_id: str
     product_id: str  # e.g. "BTC-USD" as returned by Coinbase
@@ -37,15 +47,27 @@ class CoinbaseTrade:
 
 
 class CoinbaseProducer(BaseProducer):
-    """
-    Connects to Coinbase Advanced Trade WebSocket.
-    Reads trade events for BTC, ETH, SOL.
-    Serializes to Avro and produces to raw-coinbase-match topic.
+    """Streams Coinbase trades into Kafka.
+
+    Connects to the Coinbase Advanced Trade WebSocket, reads trade events
+    for BTC, ETH, SOL, serializes them to Avro and produces them to the
+    raw-coinbase-match topic.
 
     Delivery guarantees:
         1. At-least-once from WebSocket perspective
         2. Idempotent producer prevents network-level duplicates
         3. True exactly-once starts at Flink checkpointing stage
+
+    Args:
+        bootstrap_servers: Comma-separated Kafka broker addresses.
+        schema_registry_url: URL of the Confluent Schema Registry.
+
+    Attributes:
+        ws_url: Coinbase Advanced Trade WebSocket URL.
+
+    Raises:
+        FileNotFoundError: If `schemas/coinbase_match.avsc` is not found.
+            The path is relative, so run from the `producers/` directory.
     """
 
     def __init__(
@@ -67,9 +89,16 @@ class CoinbaseProducer(BaseProducer):
         self.logger.info("CoinbaseProducer ready")
 
     def to_dict(self, trade: CoinbaseTrade, ctx) -> dict:
-        """
-        Maps CoinbaseTrade dataclass - dict for Avro serialization.
-        Called by AvroSerializer before encoding to binary.
+        """Maps a CoinbaseTrade to a dict for Avro serialization.
+
+        Called by `AvroSerializer` before encoding to binary.
+
+        Args:
+            trade: Parsed Coinbase trade.
+            ctx: Serialization context passed by `AvroSerializer`.
+
+        Returns:
+            Dict with exactly the fields of the coinbase_match Avro schema.
         """
         return {
             "trade_id": trade.trade_id,
@@ -177,9 +206,12 @@ class CoinbaseProducer(BaseProducer):
             )
 
     async def start(self):
-        """
-        Main ingestion loop with exponential backoff reconnection.
-        Sends subscribe message after each connection.
+        """Runs the main ingestion loop with exponential backoff reconnection.
+
+        Starts the background Kafka poll loop, then connects and sends the
+        market_trades subscribe message after each connection. On any
+        connection error it waits and reconnects, doubling the delay from
+        1s up to 60s. Runs until cancelled.
         """
         # background task for periodic polling which doesn't block the main WebSocket loop
         asyncio.create_task(self._poll_loop())
